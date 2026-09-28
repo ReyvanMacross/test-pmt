@@ -54,9 +54,16 @@ npm run lint    # pemeriksaan ESLint
 
 ## Database PostgreSQL
 
-Aplikasi membuat koneksi dari variabel `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD`, dan `DB_NAME`. Kredensial hanya digunakan di sisi server; jangan menambahkan awalan `NEXT_PUBLIC_`.
+Aplikasi mendukung dua konfigurasi PostgreSQL server-side:
 
-> **Penting untuk Laragon:** jangan langsung menjalankan `supabase_schema.sql` pada database Laragon yang sudah digunakan aplikasi atau berisi data. Skrip tersebut mengacu pada `auth.users`, fungsi `auth.role()`, dan tabel `profiles` milik pola Supabase/RLS, sementara query aplikasi menggunakan koneksi PostgreSQL langsung dan banyak membaca tabel `users`. Skema itu belum menjadi migrasi yang terbukti cocok untuk database Laragon.
+- Laragon/lokal: `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD`, `DB_NAME`.
+- Supabase PostgreSQL: `DATABASE_URL` dari panel Supabase. Bila `DATABASE_URL` ada, aplikasi menggunakannya melalui TLS; variabel ini hanya boleh berada di server dan jangan diberi awalan `NEXT_PUBLIC_`.
+
+Untuk Supabase, jalankan [supabase_postgres_schema.sql](</C:/Users/USER/Documents/company diskominfo/diskominfo-nextjs/supabase_postgres_schema.sql>) hanya pada project Supabase baru/kosong setelah diperiksa. Ambil connection string PostgreSQL dari **Connect** di dashboard Supabase; untuk deployment pilih metode koneksi yang sesuai lingkungan hosting (pooler bila koneksi IPv4 langsung tidak tersedia). Atur sebagai `DATABASE_URL` di environment server Next.js, jangan commit nilainya.
+
+Untuk login development awal, setelah skema dibuat jalankan [supabase_dev_admin_seed.sql](</C:/Users/USER/Documents/company diskominfo/diskominfo-nextjs/supabase_dev_admin_seed.sql>) satu kali. Kredensial sementara: `admin@diskominfo.local` / `AdminLokal2026!`. Akun ini hanya untuk lokal/testing; ganti password dan hapus/nonaktifkan seed tersebut sebelum aplikasi dipublikasikan.
+
+> **Penting:** `supabase_schema.sql` adalah rancangan lama berbasis `auth.users`/`profiles` dan bukan skema yang digunakan kode saat ini. Jangan langsung menjalankannya pada database Laragon yang sudah berisi data. Skema baru mengikuti tabel `users` dan query aplikasi saat ini, tetapi juga ditujukan untuk instalasi Supabase yang baru/kosong, bukan untuk mengubah database produksi yang sudah berjalan.
 
 Sebelum menyiapkan atau mengubah skema database:
 
@@ -66,7 +73,7 @@ Sebelum menyiapkan atau mengubah skema database:
 4. Bandingkan struktur aktual dengan query di folder `app/` dan `lib/`.
 5. Uji perubahan pada salinan database terlebih dahulu. Hindari `DROP`, `TRUNCATE`, atau menjalankan ulang skrip inisialisasi pada database aktif.
 
-Tabel yang dirujuk kode antara lain `users`, `websites`, `templates`, `activity_logs`, `contents`, serta tabel pendukung profil wilayah dan galeri. Kebutuhan kolom dapat berubah; query aplikasi adalah acuan tambahan saat memeriksa skema.
+Tabel yang dirujuk kode antara lain `users`, `websites`, `templates`, `activity_logs`, `contents`, serta tabel pendukung profil wilayah dan galeri. Kebutuhan kolom dapat berubah; query aplikasi adalah acuan tambahan saat memeriksa skema. SQL baru mengaktifkan RLS tanpa policy akses publik; akses data dilakukan dari server Next.js. Login aplikasi tetap menggunakan tabel `users`, bcrypt, dan JWT, bukan Supabase Auth.
 
 ## Area aplikasi
 
