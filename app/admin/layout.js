@@ -3,6 +3,7 @@ import { getSession } from '@/lib/auth'
 import { query } from '@/lib/db'
 import { Plus_Jakarta_Sans } from 'next/font/google'
 import Sidebar from './_components/Sidebar'
+import Breadcrumb from './_components/Breadcrumb'
 
 const jakarta = Plus_Jakarta_Sans({
   subsets: ['latin'],
@@ -67,17 +68,8 @@ export default async function AdminLayout({ children }) {
         <div className="flex-1 flex flex-col min-w-0 overflow-hidden bg-slate-50">
           {/* Top Header */}
           <header className="bg-white border-b border-slate-200 h-16 px-8 flex items-center justify-between sticky top-0 z-20 shadow-xs flex-shrink-0">
-            {/* Breadcrumbs */}
-            <div className="flex items-center gap-3 text-sm">
-              <div className="flex items-center text-slate-400">
-                <svg className="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"></path>
-                </svg>
-                <span className="hover:text-slate-600">Portal Multi-Tenant</span>
-              </div>
-              <span className="text-slate-300">/</span>
-              <span className="font-semibold text-slate-800">Manajemen Website</span>
-            </div>
+            {/* Breadcrumbs — dynamic */}
+            <Breadcrumb />
 
             {/* User Profile Pill */}
             <div className="flex items-center gap-4">

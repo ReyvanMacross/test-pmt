@@ -3,11 +3,13 @@
 import { useState, useTransition } from 'react'
 import Link from 'next/link'
 import { deleteWebsiteAction } from './actions'
+import ConfirmModal from '@/app/admin/_components/ConfirmModal'
 
 export default function WebsiteTable({ websites }) {
   const [filter, setFilter] = useState('all')
   const [search, setSearch] = useState('')
   const [isPending, startTransition] = useTransition()
+  const [confirmDelete, setConfirmDelete] = useState(null)
 
   // Filter berdasarkan kategori tab dan pencarian
   const filteredWebsites = websites.filter((ws) => {
@@ -29,13 +31,17 @@ export default function WebsiteTable({ websites }) {
   })
 
   function handleDelete(id, name) {
-    if (confirm(`Apakah Anda yakin ingin menghapus website "${name}"?`)) {
-      startTransition(async () => {
-        const formData = new FormData()
-        formData.append('id', id)
-        await deleteWebsiteAction(formData)
-      })
-    }
+    setConfirmDelete({ id, name })
+  }
+
+  function executeDelete() {
+    if (!confirmDelete) return
+    startTransition(async () => {
+      const formData = new FormData()
+      formData.append('id', confirmDelete.id)
+      await deleteWebsiteAction(formData)
+      setConfirmDelete(null)
+    })
   }
 
   return (
@@ -308,6 +314,19 @@ export default function WebsiteTable({ websites }) {
           </div>
         </div>
       </div>
+
+      {/* Modal Konfirmasi Hapus Website */}
+      <ConfirmModal
+        isOpen={Boolean(confirmDelete)}
+        onClose={() => setConfirmDelete(null)}
+        onConfirm={executeDelete}
+        title="Hapus Website?"
+        message={`Apakah Anda yakin ingin memindahkan website "${confirmDelete?.name}" ke sampah?\nWebsite yang dihapus dapat dipulihkan kembali dari menu Sampah.`}
+        confirmText="Hapus ke Sampah"
+        cancelText="Batal"
+        type="danger"
+        loading={isPending}
+      />
     </section>
   )
 }
