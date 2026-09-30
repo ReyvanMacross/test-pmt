@@ -5,12 +5,12 @@ import { redirect } from 'next/navigation'
 import { query } from '@/lib/db'
 import { getSession } from '@/lib/auth'
 
-// Helper otorisasi website
+// Helper otorisasi website (termasuk yang sudah di-trash)
 async function authorizeWebsite(websiteId, session) {
   if (session.role === 'super-admin') return true
 
   const res = await query(
-    'SELECT user_id FROM websites WHERE id = $1 AND deleted_at IS NULL LIMIT 1',
+    'SELECT user_id FROM websites WHERE id = $1 LIMIT 1',
     [websiteId]
   )
   if (res.rows.length === 0 || res.rows[0].user_id !== session.id) {
@@ -144,9 +144,10 @@ export async function deleteWebsiteAction(formData) {
   if (!session) redirect('/login')
 
   const id = formData.get('id')
-  await authorizeWebsite(id, session)
 
   try {
+    await authorizeWebsite(id, session)
+
     const res = await query('SELECT name FROM websites WHERE id = $1', [id])
     const websiteName = res.rows[0]?.name || 'Website'
 
@@ -158,11 +159,12 @@ export async function deleteWebsiteAction(formData) {
     )
   } catch (err) {
     console.error('Error deleteWebsite:', err)
-    return { error: 'Gagal menghapus website.' }
+    return { error: err.message || 'Gagal menghapus website.' }
   }
 
   revalidatePath('/admin/network')
   revalidatePath('/admin/network/trashed')
+  return { success: true, message: 'Website berhasil dipindahkan ke sampah.' }
 }
 
 // ─── 4. RESTORE WEBSITE ACTION ───────────────────────────────────────────────
@@ -171,9 +173,10 @@ export async function restoreWebsiteAction(formData) {
   if (!session) redirect('/login')
 
   const id = formData.get('id')
-  await authorizeWebsite(id, session)
 
   try {
+    await authorizeWebsite(id, session)
+
     const res = await query('SELECT name FROM websites WHERE id = $1', [id])
     const websiteName = res.rows[0]?.name || 'Website'
 
@@ -185,7 +188,7 @@ export async function restoreWebsiteAction(formData) {
     )
   } catch (err) {
     console.error('Error restoreWebsite:', err)
-    return { error: 'Gagal memulihkan website.' }
+    return { error: err.message || 'Gagal memulihkan website.' }
   }
 
   revalidatePath('/admin/network')

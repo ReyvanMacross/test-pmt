@@ -1,15 +1,23 @@
 'use client'
 
 import { useState, useTransition } from 'react'
+import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { deleteWebsiteAction } from './actions'
 import ConfirmModal from '@/app/admin/_components/ConfirmModal'
 
 export default function WebsiteTable({ websites }) {
+  const router = useRouter()
   const [filter, setFilter] = useState('all')
   const [search, setSearch] = useState('')
   const [isPending, startTransition] = useTransition()
   const [confirmDelete, setConfirmDelete] = useState(null)
+  const [toast, setToast] = useState(null)
+
+  function showToast(type, message) {
+    setToast({ type, message })
+    setTimeout(() => setToast(null), 4000)
+  }
 
   // Filter berdasarkan kategori tab dan pencarian
   const filteredWebsites = websites.filter((ws) => {
@@ -39,12 +47,19 @@ export default function WebsiteTable({ websites }) {
     startTransition(async () => {
       const formData = new FormData()
       formData.append('id', confirmDelete.id)
-      await deleteWebsiteAction(formData)
+      const res = await deleteWebsiteAction(formData)
       setConfirmDelete(null)
+      if (res?.error) {
+        showToast('error', res.error)
+      } else {
+        showToast('success', 'Website berhasil dipindahkan ke sampah.')
+        router.refresh()
+      }
     })
   }
 
   return (
+    <>
     <section aria-labelledby="table-title" className="bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden flex flex-col">
       {/* ── Table Toolbar Controls ───────────────────────────────────────── */}
       <div className="p-4 sm:px-6 border-b border-slate-200 bg-slate-50/50 flex flex-col sm:flex-row items-center justify-between gap-4">
@@ -328,5 +343,33 @@ export default function WebsiteTable({ websites }) {
         loading={isPending}
       />
     </section>
+
+    {/* Toast Popup Notification */}
+    {toast && (
+      <div className={`fixed top-5 right-5 z-[9999] flex items-start gap-3 px-4 py-3 rounded-xl shadow-lg border max-w-sm ${
+        toast.type === 'success'
+          ? 'bg-green-50 border-green-200 text-green-800'
+          : 'bg-red-50 border-red-200 text-red-800'
+      }`}>
+        <div className={`flex-shrink-0 w-5 h-5 mt-0.5 ${toast.type === 'success' ? 'text-green-500' : 'text-red-500'}`}>
+          {toast.type === 'success' ? (
+            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          ) : (
+            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          )}
+        </div>
+        <p className="text-sm font-medium leading-snug">{toast.message}</p>
+        <button onClick={() => setToast(null)} className="flex-shrink-0 ml-auto text-slate-400 hover:text-slate-600 transition-colors">
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+    )}
+    </>
   )
 }

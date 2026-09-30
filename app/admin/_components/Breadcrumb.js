@@ -84,6 +84,8 @@ export default function Breadcrumb() {
     }
   } else if (pathname.startsWith('/admin/activities')) {
     crumbs.push({ label: 'Activity Logs', href: null, isCurrent: true })
+  } else if (pathname.startsWith('/admin/password')) {
+    crumbs.push({ label: 'Ganti Password', href: null, isCurrent: true })
   }
 
   return (
