@@ -139,6 +139,7 @@ Next.js membaca `.env.local` ketika proses dimulai. Selalu restart `next dev` se
 
 - `DB_SSL=false`: Laragon lokal tanpa SSL.
 - `DB_SSL=true`: koneksi remote Supabase dengan verifikasi sertifikat TLS.
+- Jika Node.js melaporkan `self-signed certificate in certificate chain`, unduh CA certificate di **Supabase Dashboard → Database → Settings → SSL Configuration**, simpan sebagai `certs/supabase-ca.crt`, lalu tambahkan `DB_SSL_CA_FILE=certs/supabase-ca.crt` ke `.env.local`. Koneksi tetap memverifikasi sertifikat dengan `rejectUnauthorized: true`.
 - Jika `DB_SSL` tidak diisi, production mengaktifkan SSL dan development mematikannya.
 
 Jangan mematikan validasi sertifikat TLS sebagai solusi permanen. Perubahan di `lib/db.js` ini memungkinkan Supabase SSL diuji dari mode development tanpa mengubah mode Laragon.

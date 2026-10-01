@@ -1,5 +1,7 @@
 const { loadEnvConfig } = require('@next/env')
 const { Pool } = require('pg')
+const { readFileSync } = require('node:fs')
+const { resolve } = require('node:path')
 
 loadEnvConfig(process.cwd())
 
@@ -7,7 +9,13 @@ const connectionString = process.env.DATABASE_URL
 const production = process.env.NODE_ENV === 'production'
 const configuredSsl = process.env.DB_SSL?.toLowerCase()
 const useSsl = configuredSsl === 'true' || (configuredSsl !== 'false' && production)
-const ssl = useSsl ? { rejectUnauthorized: true } : false
+const sslCaFile = process.env.DB_SSL_CA_FILE?.trim()
+const ssl = useSsl
+  ? {
+      rejectUnauthorized: true,
+      ...(sslCaFile ? { ca: readFileSync(resolve(process.cwd(), sslCaFile), 'utf8') } : {}),
+    }
+  : false
 
 if (!connectionString && production) {
   console.error('GAGAL: DATABASE_URL wajib diatur di environment production.')
