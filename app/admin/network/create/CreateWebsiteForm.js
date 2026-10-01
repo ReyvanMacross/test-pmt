@@ -80,6 +80,18 @@ export default function CreateWebsiteForm({ templates }) {
           Subdomain <span style={{ color: '#EF4444' }}>*</span>
         </label>
         <div style={{ display: 'flex', alignItems: 'center' }}>
+          <span style={{
+            background: '#F3F4F6',
+            border: '1px solid #D1D5DB',
+            borderRight: 'none',
+            padding: '10px 14px',
+            borderRadius: '8px 0 0 8px',
+            fontSize: '14px',
+            color: '#6B7280',
+            fontWeight: 600
+          }}>
+            /
+          </span>
           <input
             type="text"
             id="subdomain"
@@ -91,26 +103,15 @@ export default function CreateWebsiteForm({ templates }) {
             style={{
               flex: 1,
               padding: '10px 14px',
-              borderRadius: '8px 0 0 8px',
+              borderRadius: '0 8px 8px 0',
               border: '1px solid #D1D5DB',
-              borderRight: 'none',
               fontSize: '14px',
               boxSizing: 'border-box'
             }}
           />
-          <span style={{
-            background: '#F3F4F6',
-            border: '1px solid #D1D5DB',
-            padding: '10px 14px',
-            borderRadius: '0 8px 8px 0',
-            fontSize: '14px',
-            color: '#6B7280'
-          }}>
-            .bandung.go.id
-          </span>
         </div>
         <p style={{ fontSize: '12px', color: '#6B7280', marginTop: '6px', margin: 0 }}>
-          Hanya huruf kecil, angka, dan tanda hubung (-). Contoh: <code>sukajadi</code> akan diakses lewat <code>sukajadi.bandung.go.id</code>.
+          Hanya huruf kecil, angka, dan tanda hubung (-). Contoh: <code>sukajadi</code> akan diakses lewat <code>/sukajadi</code>.
         </p>
       </div>
 

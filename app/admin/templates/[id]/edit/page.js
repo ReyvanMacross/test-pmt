@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { redirect, notFound } from 'next/navigation'
 import { getSession } from '@/lib/auth'
+import { getCurrentAdminAccess, hasAdminPermission } from '@/lib/admin-access'
 import { query } from '@/lib/db'
 import EditTemplateForm from './EditTemplateForm'
 
@@ -38,6 +39,8 @@ export default async function EditTemplatePage({ params }) {
   const { id } = await params
   const session = await getSession()
   if (!session) redirect('/login')
+  const access = await getCurrentAdminAccess()
+  if (!hasAdminPermission(access, 'manage-templates')) redirect('/admin/dashboard')
 
   const res = await query(
     `SELECT t.*,

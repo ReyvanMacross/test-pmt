@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useMemo } from 'react'
+import Link from 'next/link'
 import { CONTENT_MODULES } from '@/lib/content-modules'
 import { saveModuleContentAction } from './actions'
 
@@ -148,14 +149,16 @@ export default function ContentModulesClient({ website, existingContents = {} })
   const [saveSuccess, setSaveSuccess] = useState(false)
   const [saveError, setSaveError] = useState(null)
 
+  function isModuleFilled(item) {
+    return Boolean(item?.has_content || item?.title?.trim() || item?.body?.trim() || item?.has_images || item?.has_files)
+  }
+
   // Total modul
   const totalModules = CONTENT_MODULES.length // 23
 
   // Status Sinkronisasi: Hitung modul unik yang sudah diinput/diedit (default 0 jika belum ada yang diinput)
   const filledCount = useMemo(() => {
-    return Object.values(contentMap).filter(
-      (item) => item?.has_content || Boolean(item?.title || item?.body)
-    ).length
+    return CONTENT_MODULES.filter((module) => isModuleFilled(contentMap[module.slug])).length
   }, [contentMap])
 
   const completionPercent = Math.min(100, Math.round((filledCount / totalModules) * 100))
@@ -207,27 +210,39 @@ export default function ContentModulesClient({ website, existingContents = {} })
     const titleVal = formData.get('title')?.trim()
     const bodyVal = formData.get('body')?.trim()
 
-    const res = await saveModuleContentAction(website.id, activeModalModule.slug, formData)
+    try {
+      const res = await saveModuleContentAction(website.id, activeModalModule.slug, formData)
 
-    if (res?.error) {
-      setSaveError(res.error)
+      if (res?.error) {
+        setSaveError(res.error)
+        setSaving(false)
+      } else {
+        const uploadedFile = formData.get('file')
+        const removedFile = formData.get('remove_file') === 'true'
+        setContentMap((prev) => {
+          const previous = prev[activeModalModule.slug] || {}
+          const hasFile = removedFile ? false : Boolean(previous.has_files || previous.has_images || (uploadedFile && uploadedFile.size > 0))
+          return {
+            ...prev,
+            [activeModalModule.slug]: {
+              ...previous,
+              title: titleVal,
+              body: bodyVal,
+              has_files: hasFile && !uploadedFile?.type?.startsWith('image/'),
+              has_images: hasFile && Boolean(uploadedFile?.type?.startsWith('image/') || previous.has_images),
+              has_content: Boolean(titleVal || bodyVal || hasFile),
+            },
+          }
+        })
+        setSaving(false)
+        setSaveSuccess(true)
+        setTimeout(() => {
+          handleCloseModal()
+        }, 1000)
+      }
+    } catch (error) {
+      setSaveError(error.message || 'Gagal menyimpan konten. Silakan coba lagi.')
       setSaving(false)
-    } else {
-      // Tandai modul ini sudah terisi di local state
-      // Jika sebelumnya sudah terisi dan diedit lagi, status sinkronisasi tetap (tidak bertambah ganda)
-      setContentMap((prev) => ({
-        ...prev,
-        [activeModalModule.slug]: {
-          title: titleVal,
-          body: bodyVal,
-          has_content: Boolean(titleVal || bodyVal),
-        },
-      }))
-      setSaving(false)
-      setSaveSuccess(true)
-      setTimeout(() => {
-        handleCloseModal()
-      }, 1000)
     }
   }
 
@@ -379,7 +394,7 @@ export default function ContentModulesClient({ website, existingContents = {} })
           <div id="modulesContainer" className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {filteredModules.map((mod) => {
               const contentData = contentMap[mod.slug]
-              const isFilled = Boolean(contentData?.has_content || contentData?.body || contentData?.title)
+              const isFilled = isModuleFilled(contentData)
 
               return (
                 <div
@@ -394,24 +409,47 @@ export default function ContentModulesClient({ website, existingContents = {} })
                       <span className="text-sm font-medium text-slate-800 truncate">
                         {mod.title}
                       </span>
-                      {isFilled ? (
-                        <span
-                          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 flex-shrink-0"
-                          title="Modul telah terisi konten"
-                        >
-                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-600"></span>
-                          Terisi
-                        </span>
-                      ) : null}
+                      <span
+                        className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold flex-shrink-0 ${isFilled ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-slate-100 text-slate-500 border border-slate-200'}`}
+                        title={isFilled ? 'Modul telah terisi konten' : 'Modul belum memiliki konten'}
+                      >
+                        <span className={`w-1.5 h-1.5 rounded-full ${isFilled ? 'bg-emerald-600' : 'bg-slate-400'}`}></span>
+                        {isFilled ? 'Terisi' : 'Kosong'}
+                      </span>
                     </div>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => handleOpenModal(mod)}
-                    className="text-xs font-semibold px-3.5 py-1.5 rounded-md border border-slate-300 text-slate-700 hover:bg-white hover:text-blue-700 hover:border-blue-500 shrink-0 whitespace-nowrap transition-colors cursor-pointer"
-                  >
-                    {mod.actionType}
-                  </button>
+                    {mod.actionType === 'Edit' || ['berita', 'galeri-gambar', 'galeri-video', 'pengumuman', 'inovasi', 'agenda-kegiatan', 'layanan'].includes(mod.slug) ? (
+                    <Link
+                      href={
+                          mod.slug === 'berita'
+                            ? `/admin/network/${website.id}/content/berita`
+                            : mod.slug === 'galeri-gambar'
+                              ? `/admin/network/${website.id}/content/galeri-gambar`
+                              : mod.slug === 'galeri-video'
+                                ? `/admin/network/${website.id}/content/galeri-video`
+                                : mod.slug === 'pengumuman'
+                                  ? `/admin/network/${website.id}/content/pengumuman`
+                                  : mod.slug === 'inovasi'
+                                    ? `/admin/network/${website.id}/content/inovasi`
+                                    : mod.slug === 'agenda-kegiatan'
+                                      ? `/admin/network/${website.id}/content/agenda-kegiatan`
+                                      : mod.slug === 'layanan'
+                                        ? `/admin/network/${website.id}/content/layanan`
+                              : `/admin/network/${website.id}/content/${mod.slug}`
+                      }
+                      className="text-xs font-semibold px-3.5 py-1.5 rounded-md border border-slate-300 text-slate-700 hover:bg-white hover:text-blue-700 hover:border-blue-500 shrink-0 whitespace-nowrap transition-colors cursor-pointer"
+                    >
+                      {mod.actionType}
+                    </Link>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => handleOpenModal(mod)}
+                      className="text-xs font-semibold px-3.5 py-1.5 rounded-md border border-slate-300 text-slate-700 hover:bg-white hover:text-blue-700 hover:border-blue-500 shrink-0 whitespace-nowrap transition-colors cursor-pointer"
+                    >
+                      {mod.actionType}
+                    </button>
+                  )}
                 </div>
               )
             })}
@@ -496,7 +534,7 @@ export default function ContentModulesClient({ website, existingContents = {} })
                   className="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-sm text-slate-800 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all resize-y"
                 />
                 <p className="text-[11px] text-slate-400 mt-1">
-                  Konten ini akan dipublikasikan pada halaman publik subdomain {website.subdomain}.bandung.go.id.
+                  Konten ini akan dipublikasikan pada halaman publik /{website.subdomain}.
                 </p>
               </div>
 

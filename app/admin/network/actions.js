@@ -4,10 +4,15 @@ import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { query } from '@/lib/db'
 import { getSession } from '@/lib/auth'
+import { getCurrentAdminAccess, hasAdminPermission } from '@/lib/admin-access'
 
 // Helper otorisasi website (termasuk yang sudah di-trash)
 async function authorizeWebsite(websiteId, session) {
-  if (session.role === 'super-admin') return true
+  const access = await getCurrentAdminAccess()
+  if (hasAdminPermission(access, 'manage-all-websites')) return true
+  if (!hasAdminPermission(access, 'manage-assigned-website')) {
+    throw new Error('Anda tidak memiliki izin mengelola website.')
+  }
 
   const res = await query(
     'SELECT user_id FROM websites WHERE id = $1 LIMIT 1',
@@ -23,6 +28,10 @@ async function authorizeWebsite(websiteId, session) {
 export async function createWebsiteAction(formData) {
   const session = await getSession()
   if (!session) redirect('/login')
+  const access = await getCurrentAdminAccess()
+  if (!hasAdminPermission(access, 'manage-all-websites') && !hasAdminPermission(access, 'manage-assigned-website')) {
+    return { error: 'Anda tidak memiliki izin mengelola website.' }
+  }
 
   const name = formData.get('name')?.trim()
   const subdomain = formData.get('subdomain')?.trim().toLowerCase()
@@ -215,7 +224,7 @@ export async function permanentDeleteWebsiteAction(formData) {
     // Hapus data terkait dulu (cascade manual jika FK tidak CASCADE)
     // menu_items tidak punya kolom website_id, jadi skip (atau CASCADE otomatis)
     await query('DELETE FROM activity_logs WHERE website_id = $1', [id])
-    await query('DELETE FROM gallery_items WHERE album_id IN (SELECT id FROM gallery_albums WHERE website_id = $1)', [id])
+    await query('DELETE FROM gallery_items WHERE gallery_album_id IN (SELECT id FROM gallery_albums WHERE website_id = $1)', [id])
     await query('DELETE FROM gallery_albums WHERE website_id = $1', [id])
     await query('DELETE FROM news_items WHERE website_id = $1', [id])
     await query('DELETE FROM contents WHERE website_id = $1', [id])
@@ -236,4 +245,3 @@ export async function permanentDeleteWebsiteAction(formData) {
   revalidatePath('/admin/network/trashed')
   return { success: true, message: 'Website berhasil dihapus secara permanen.' }
 }
-

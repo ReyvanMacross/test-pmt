@@ -4,14 +4,16 @@ import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { query } from '@/lib/db'
 import { getSession } from '@/lib/auth'
+import { getCurrentAdminAccess, hasAdminPermission } from '@/lib/admin-access'
 
 // ─── 1. BUAT TEMPLATE BARU ────────────────────────────────────────────────────
 export async function createTemplateAction(formData) {
   const session = await getSession()
   if (!session) redirect('/login')
+  const access = await getCurrentAdminAccess()
 
-  if (session.role !== 'super-admin') {
-    return { error: 'Hanya Super Administrator yang dapat menambahkan template baru.' }
+  if (!hasAdminPermission(access, 'manage-templates')) {
+    return { error: 'Anda tidak memiliki izin mengelola template.' }
   }
 
   const name = (formData.get('nama_template') || formData.get('name'))?.trim()
@@ -68,9 +70,10 @@ export async function createTemplateAction(formData) {
 export async function updateTemplateAction(formData) {
   const session = await getSession()
   if (!session) redirect('/login')
+  const access = await getCurrentAdminAccess()
 
-  if (session.role !== 'super-admin') {
-    return { error: 'Hanya Super Administrator yang dapat mengedit template.' }
+  if (!hasAdminPermission(access, 'manage-templates')) {
+    return { error: 'Anda tidak memiliki izin mengelola template.' }
   }
 
   const id = formData.get('id')
@@ -121,9 +124,10 @@ export async function updateTemplateAction(formData) {
 export async function deleteTemplateAction(formData) {
   const session = await getSession()
   if (!session) redirect('/login')
+  const access = await getCurrentAdminAccess()
 
-  if (session.role !== 'super-admin') {
-    return { error: 'Hanya Super Administrator yang dapat menghapus template.' }
+  if (!hasAdminPermission(access, 'manage-templates')) {
+    return { error: 'Anda tidak memiliki izin mengelola template.' }
   }
 
   const id = formData.get('id')

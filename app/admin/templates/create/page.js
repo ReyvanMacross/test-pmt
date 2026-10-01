@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { getSession } from '@/lib/auth';
 import CreateTemplateForm from './CreateTemplateForm';
+import { getCurrentAdminAccess, hasAdminPermission } from '@/lib/admin-access';
 
 export const metadata = {
   title: 'Tambah Template Baru | Admin Panel',
@@ -10,7 +11,8 @@ export const metadata = {
 export default async function CreateTemplatePage() {
   const session = await getSession();
   if (!session) redirect('/login');
-  if (session.role !== 'super-admin') redirect('/admin/templates');
+  const access = await getCurrentAdminAccess();
+  if (!hasAdminPermission(access, 'manage-templates')) redirect('/admin/dashboard');
 
   return (
     <div className="space-y-6">

@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation'
 import { getSession } from '@/lib/auth'
 import { query } from '@/lib/db'
+import { getCurrentAdminAccess, hasAdminPermission } from '@/lib/admin-access'
 import ActivityLogsClient from './ActivityLogsClient'
 
 export const metadata = {
@@ -12,7 +13,9 @@ const PER_PAGE = 15
 export default async function ActivityLogsPage() {
   const session = await getSession()
   if (!session) redirect('/login')
-  if (session.role !== 'super-admin') redirect('/admin/dashboard')
+  const access = await getCurrentAdminAccess()
+  if (!hasAdminPermission(access, 'view-all-logs') && !hasAdminPermission(access, 'view-own-logs')) redirect('/admin/dashboard')
+  const ownOnly = !hasAdminPermission(access, 'view-all-logs')
 
   // ── Metrik summary ─────────────────────────────────────────────────────────
   let totalToday = 0
@@ -23,10 +26,10 @@ export default async function ActivityLogsPage() {
 
   try {
     const [resToday, resWeek, resMonth, resAll] = await Promise.all([
-      query(`SELECT COUNT(*) FROM activity_logs WHERE created_at >= NOW() - INTERVAL '1 day'`),
-      query(`SELECT COUNT(*) FROM activity_logs WHERE created_at >= NOW() - INTERVAL '7 days'`),
-      query(`SELECT COUNT(*) FROM activity_logs WHERE created_at >= NOW() - INTERVAL '30 days'`),
-      query(`SELECT COUNT(*) FROM activity_logs`),
+      query(`SELECT COUNT(*) FROM activity_logs WHERE created_at >= NOW() - INTERVAL '1 day'${ownOnly ? ' AND user_id = $1' : ''}`, ownOnly ? [session.id] : []),
+      query(`SELECT COUNT(*) FROM activity_logs WHERE created_at >= NOW() - INTERVAL '7 days'${ownOnly ? ' AND user_id = $1' : ''}`, ownOnly ? [session.id] : []),
+      query(`SELECT COUNT(*) FROM activity_logs WHERE created_at >= NOW() - INTERVAL '30 days'${ownOnly ? ' AND user_id = $1' : ''}`, ownOnly ? [session.id] : []),
+      query(`SELECT COUNT(*) FROM activity_logs${ownOnly ? ' WHERE user_id = $1' : ''}`, ownOnly ? [session.id] : []),
     ])
 
     totalToday = parseInt(resToday.rows[0].count, 10)
@@ -51,9 +54,10 @@ export default async function ActivityLogsPage() {
       FROM activity_logs a
       LEFT JOIN users u ON a.user_id = u.id
       LEFT JOIN websites w ON a.website_id = w.id
+      ${ownOnly ? 'WHERE a.user_id = $2' : ''}
       ORDER BY a.created_at DESC
       LIMIT $1 OFFSET 0
-    `, [PER_PAGE])
+    `, ownOnly ? [PER_PAGE, session.id] : [PER_PAGE])
 
     initialLogs = resLogs.rows.map((r) => ({
       ...r,

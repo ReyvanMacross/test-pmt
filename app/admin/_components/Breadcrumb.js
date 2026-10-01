@@ -2,6 +2,7 @@
 
 import { usePathname } from 'next/navigation'
 import Link from 'next/link'
+import { CONTENT_MODULES } from '@/lib/content-modules'
 
 const breadcrumbMap = {
   '/admin/network': 'Manajemen Website',
@@ -49,7 +50,96 @@ export default function Breadcrumb() {
 
     // /admin/network/[id]/content
     if (segments.length >= 5 && segments[4] === 'content') {
-      crumbs.push({ label: 'Kelola Konten', href: null, isCurrent: true })
+      const hasSub = segments.length >= 6
+      const subSlug = hasSub ? segments[5] : null
+
+      if (hasSub) {
+        crumbs.push({
+          label: 'Kelola Konten',
+          href: `/admin/network/${segments[3]}/content`,
+          isCurrent: false,
+        })
+        if (subSlug === 'berita') {
+          crumbs.push({
+            label: 'Kelola Berita',
+            href: `/admin/network/${segments[3]}/content/berita`,
+            isCurrent: segments.length === 6,
+          })
+          if (segments.length >= 8 && segments[7] === 'edit') {
+            crumbs.push({ label: 'Edit Link Berita', href: null, isCurrent: true })
+          }
+        } else if (subSlug === 'galeri-gambar') {
+          crumbs.push({
+            label: 'Kelola Galeri Gambar',
+            href: `/admin/network/${segments[3]}/content/galeri-gambar`,
+            isCurrent: segments.length === 6,
+          })
+          if (segments.length >= 7) {
+            crumbs.push({ label: 'Kelola Isi Album', href: null, isCurrent: true })
+          }
+        } else if (subSlug === 'galeri-video') {
+          crumbs.push({
+            label: 'Kelola Galeri Video',
+            href: `/admin/network/${segments[3]}/content/galeri-video`,
+            isCurrent: segments.length === 6,
+          })
+          if (segments.length >= 7) {
+            crumbs.push({ label: 'Kelola Isi Album Video', href: null, isCurrent: true })
+          }
+        } else if (subSlug === 'pengumuman') {
+          crumbs.push({
+            label: 'Kelola Pengumuman',
+            href: `/admin/network/${segments[3]}/content/pengumuman`,
+            isCurrent: segments.length === 6,
+          })
+          if (segments.length >= 8 && segments[7] === 'edit') {
+            crumbs.push({ label: 'Edit Pengumuman', href: null, isCurrent: true })
+          }
+        } else if (subSlug === 'inovasi') {
+          crumbs.push({
+            label: 'Kelola Inovasi',
+            href: `/admin/network/${segments[3]}/content/inovasi`,
+            isCurrent: segments.length === 6,
+          })
+          if (segments.length >= 8 && segments[7] === 'edit') {
+            crumbs.push({ label: 'Edit Inovasi', href: null, isCurrent: true })
+          }
+        } else if (subSlug === 'agenda-kegiatan') {
+          crumbs.push({
+            label: 'Kelola Agenda Kegiatan',
+            href: `/admin/network/${segments[3]}/content/agenda-kegiatan`,
+            isCurrent: segments.length === 6,
+          })
+          if (segments.length >= 8 && segments[7] === 'edit') {
+            crumbs.push({ label: 'Edit Agenda Kegiatan', href: null, isCurrent: true })
+          }
+        } else if (subSlug === 'layanan') {
+          crumbs.push({
+            label: 'Kelola Layanan Publik',
+            href: `/admin/network/${segments[3]}/content/layanan`,
+            isCurrent: segments.length === 6,
+          })
+          if (segments.length >= 8 && segments[7] === 'edit') {
+            crumbs.push({ label: 'Edit Layanan Publik', href: null, isCurrent: true })
+          }
+        } else if (subSlug === 'kontak') {
+          crumbs.push({
+            label: 'Kelola Informasi Kontak',
+            href: `/admin/network/${segments[3]}/content/kontak`,
+            isCurrent: true,
+          })
+        } else if (subSlug === 'profil' || subSlug === 'profile') {
+          crumbs.push({ label: 'Edit Profil', href: null, isCurrent: true })
+        } else {
+          const modMeta = CONTENT_MODULES.find((m) => m.slug === subSlug)
+          const modTitle = modMeta
+            ? modMeta.title
+            : subSlug.replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
+          crumbs.push({ label: `Edit ${modTitle}`, href: null, isCurrent: true })
+        }
+      } else {
+        crumbs.push({ label: 'Kelola Konten', href: null, isCurrent: true })
+      }
     }
 
     // /admin/network/create

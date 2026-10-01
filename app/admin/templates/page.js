@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation'
 import { getSession } from '@/lib/auth'
 import { query } from '@/lib/db'
+import { getCurrentAdminAccess, hasAdminPermission } from '@/lib/admin-access'
 import TemplatesHeader from './TemplatesHeader'
 import TemplatesTable from './TemplatesTable'
 
@@ -11,6 +12,8 @@ export const metadata = {
 export default async function TemplatesPage() {
   const session = await getSession()
   if (!session) redirect('/login')
+  const access = await getCurrentAdminAccess()
+  if (!hasAdminPermission(access, 'manage-templates')) redirect('/admin/dashboard')
 
   // Query templates dan jumlah website pengguna dari PostgreSQL
   let templates = []

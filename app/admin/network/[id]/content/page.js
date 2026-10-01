@@ -35,13 +35,13 @@ export default async function ContentManagementPage({ params }) {
     redirect('/admin/network')
   }
 
-  // 2. Ambil konten modul yang sudah tersimpan di database
-  // Default 0 jika belum ada yang diinput
+  // Konten modul teks/dokumen disimpan pada contents. Berita dan galeri memakai
+  // tabel khusus, sehingga statusnya juga harus dihitung dari sumber tersebut.
   const existingContentsMap = {}
 
   try {
     const resContents = await query(
-      `SELECT c.id, c.title, c.body, m.slug AS module_slug
+      `SELECT c.id, c.title, c.body, c.images, c.files, m.slug AS module_slug
        FROM contents c
        JOIN menu_items m ON c.menu_item_id = m.id
        WHERE c.website_id = $1`,
@@ -49,10 +49,14 @@ export default async function ContentManagementPage({ params }) {
     )
 
     resContents.rows.forEach((row) => {
-      const isFilled = Boolean(row.title || row.body)
+      const hasImages = Array.isArray(row.images) && row.images.length > 0
+      const hasFiles = Array.isArray(row.files) && row.files.length > 0
+      const isFilled = Boolean(row.title?.trim() || row.body?.trim() || hasImages || hasFiles)
       existingContentsMap[row.module_slug] = {
         title: row.title,
         body: row.body,
+        has_images: hasImages,
+        has_files: hasFiles,
         has_content: isFilled,
       }
     })
@@ -60,8 +64,74 @@ export default async function ContentManagementPage({ params }) {
     console.error('Error fetching contents for website:', err)
   }
 
+  try {
+    const contactResult = await query(
+      `SELECT contact_address, operating_hours, office_phone, whatsapp_phone, official_email,
+              google_maps_url, instagram_username, facebook_page_name, youtube_channel_url
+       FROM wilayah_profiles WHERE website_id = $1 LIMIT 1`,
+      [id]
+    )
+    const contact = contactResult.rows[0]
+    const hasContact = Boolean(contact && Object.values(contact).some((value) => typeof value === 'string' && value.trim()))
+    existingContentsMap.kontak = { ...existingContentsMap.kontak, has_content: hasContact }
+  } catch (err) {
+    console.error('Error fetching contact profile status:', err)
+  }
+
+  try {
+    const [news, albums, announcements, innovations, agendas, services] = await Promise.all([
+      query('SELECT COUNT(*)::int AS count FROM news_items WHERE website_id = $1', [id]),
+      query('SELECT type, COUNT(*)::int AS count FROM gallery_albums WHERE website_id = $1 GROUP BY type', [id]),
+      query('SELECT COUNT(*)::int AS count FROM announcements WHERE website_id = $1', [id]),
+      query('SELECT COUNT(*)::int AS count FROM innovations WHERE website_id = $1', [id]),
+      query('SELECT COUNT(*)::int AS count FROM agendas WHERE website_id = $1', [id]),
+      query('SELECT COUNT(*)::int AS count FROM services WHERE website_id = $1', [id]),
+    ])
+    const moduleRow = (slug) => existingContentsMap[slug] || { has_content: false }
+    existingContentsMap.berita = {
+      ...moduleRow('berita'),
+      item_count: news.rows[0]?.count || 0,
+      has_content: Boolean(moduleRow('berita').has_content || news.rows[0]?.count),
+    }
+    const albumCounts = Object.fromEntries(albums.rows.map((row) => [row.type, row.count]))
+    existingContentsMap['galeri-gambar'] = {
+      ...moduleRow('galeri-gambar'),
+      item_count: albumCounts.image || 0,
+      has_content: Boolean(moduleRow('galeri-gambar').has_content || albumCounts.image),
+    }
+    existingContentsMap['galeri-video'] = {
+      ...moduleRow('galeri-video'),
+      item_count: albumCounts.video || 0,
+      has_content: Boolean(moduleRow('galeri-video').has_content || albumCounts.video),
+    }
+    existingContentsMap.pengumuman = {
+      ...moduleRow('pengumuman'),
+      item_count: announcements.rows[0]?.count || 0,
+      has_content: Boolean(moduleRow('pengumuman').has_content || announcements.rows[0]?.count),
+    }
+    existingContentsMap.inovasi = {
+      ...moduleRow('inovasi'),
+      item_count: innovations.rows[0]?.count || 0,
+      has_content: Boolean(moduleRow('inovasi').has_content || innovations.rows[0]?.count),
+    }
+    existingContentsMap['agenda-kegiatan'] = {
+      ...moduleRow('agenda-kegiatan'),
+      item_count: agendas.rows[0]?.count || 0,
+      has_content: Boolean(moduleRow('agenda-kegiatan').has_content || agendas.rows[0]?.count),
+    }
+    existingContentsMap.layanan = {
+      ...moduleRow('layanan'),
+      item_count: services.rows[0]?.count || 0,
+      has_content: Boolean(moduleRow('layanan').has_content || services.rows[0]?.count),
+    }
+  } catch (err) {
+    console.error('Error fetching structured content status:', err)
+  }
+
   const templateLabel = website.template_name || 'Template Kecamatan'
-  const domainUrl = `https://bandung.go.id/${website.subdomain}`
+  const domainUrl = `/${website.subdomain}`
+
+  const contentVersion = JSON.stringify(Object.entries(existingContentsMap).map(([slug, item]) => [slug, item.has_content, item.title, item.body]))
 
   return (
     <div className="flex flex-col w-full space-y-6">
@@ -87,7 +157,7 @@ export default async function ContentManagementPage({ params }) {
               rel="noreferrer"
               className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-700 hover:underline font-medium"
             >
-              <span>bandung.go.id/{website.subdomain}</span>
+              <span>/{website.subdomain}</span>
               <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
               </svg>
@@ -122,6 +192,7 @@ export default async function ContentManagementPage({ params }) {
 
       {/* ── Content Modules Client (Health Metric, Search, Tabs, All 23 Modules & Modal) ── */}
       <ContentModulesClient
+        key={contentVersion}
         website={website}
         existingContents={existingContentsMap}
       />

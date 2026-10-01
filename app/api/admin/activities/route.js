@@ -1,13 +1,15 @@
 import { NextResponse } from 'next/server'
 import { getSession } from '@/lib/auth'
 import { query } from '@/lib/db'
+import { getCurrentAdminAccess, hasAdminPermission } from '@/lib/admin-access'
 
 const PER_PAGE = 15
 
 export async function GET(request) {
   // Auth check — super-admin only
   const session = await getSession()
-  if (!session || session.role !== 'super-admin') {
+  const access = await getCurrentAdminAccess()
+  if (!session || (!hasAdminPermission(access, 'view-all-logs') && !hasAdminPermission(access, 'view-own-logs'))) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
@@ -23,6 +25,11 @@ export async function GET(request) {
   // Build WHERE clauses
   const conditions = []
   const params = []
+
+  if (!hasAdminPermission(access, 'view-all-logs')) {
+    params.push(session.id)
+    conditions.push(`a.user_id = $${params.length}`)
+  }
 
   if (role) {
     params.push(role)

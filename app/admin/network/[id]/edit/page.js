@@ -72,7 +72,7 @@ export default async function EditWebsitePage({ params }) {
             <span className="font-semibold text-blue-600">{website.name}</span>
             <span className="mx-2 text-slate-300">—</span>
             <span className="font-mono text-xs text-slate-400">
-              bandung.go.id/{website.subdomain}
+              /{website.subdomain}
             </span>
           </p>
         </div>
@@ -137,7 +137,7 @@ export default async function EditWebsitePage({ params }) {
               <div className="flex items-center justify-between">
                 <span className="text-xs text-slate-500">URL</span>
                 <a
-                  href={`https://bandung.go.id/${website.subdomain}`}
+                  href={`/${website.subdomain}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-1 text-xs font-mono text-blue-600 hover:underline"

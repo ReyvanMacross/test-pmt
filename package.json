@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "db:check": "node scripts/check-db.cjs",
+    "db:hash-password": "node scripts/hash-admin-password.cjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.7",

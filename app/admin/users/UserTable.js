@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import Link from 'next/link'
 import ConfirmModal from '@/app/admin/_components/ConfirmModal'
 import UserFormModal from './UserFormModal'
@@ -70,6 +70,10 @@ export default function UserTable({ initialUsers, currentUserId, trashedCount = 
     message: '',
     type: 'info',
   })
+
+  useEffect(() => {
+    setUsers(initialUsers)
+  }, [initialUsers])
 
   // Filtered users by search
   const filteredUsers = useMemo(() => {

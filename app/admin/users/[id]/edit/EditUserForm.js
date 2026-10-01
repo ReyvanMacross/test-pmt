@@ -152,6 +152,7 @@ export default function EditUserForm({ user, currentUserId, lastLogin }) {
       } else {
         setPassword('')
         setConfirmPassword('')
+        router.refresh()
         setAlertModal({
           isOpen: true,
           title: 'Berhasil',

@@ -43,7 +43,7 @@ export default async function AdminLayout({ children }) {
   let user = session
   try {
     const res = await query(
-      'SELECT id, name, email, role FROM users WHERE id = $1 AND deleted_at IS NULL LIMIT 1',
+      'SELECT id, name, email, role, permissions FROM users WHERE id = $1 AND deleted_at IS NULL LIMIT 1',
       [session.id]
     )
     if (res.rows.length > 0) {
@@ -62,7 +62,7 @@ export default async function AdminLayout({ children }) {
     <div className={`${jakarta.className} bg-slate-50 text-slate-800 antialiased min-h-screen flex flex-col`}>
       <div className="flex h-screen overflow-hidden">
         {/* ── Sidebar ────────────────────────────────────────────────────── */}
-        <Sidebar userRole={userRole} />
+          <Sidebar userRole={userRole} permissions={user.permissions || []} />
 
         {/* ── Main Content Wrapper ───────────────────────────────────────── */}
         <div className="flex-1 flex flex-col min-w-0 overflow-hidden bg-slate-50">

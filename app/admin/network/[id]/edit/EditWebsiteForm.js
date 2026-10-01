@@ -99,7 +99,7 @@ export default function EditWebsiteForm({ website, templates }) {
         </label>
         <div className="flex items-center rounded-xl border border-slate-200 overflow-hidden focus-within:border-blue-500 focus-within:ring-4 focus-within:ring-blue-500/10 transition-all">
           <span className="bg-slate-100 text-slate-500 px-3.5 py-3 text-sm font-mono border-r border-slate-200 select-none whitespace-nowrap shrink-0">
-            https://bandung.go.id/
+            /
           </span>
           <input
             type="text"

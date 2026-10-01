@@ -4,20 +4,22 @@ import { revalidatePath } from 'next/cache'
 import bcrypt from 'bcryptjs'
 import { getSession } from '@/lib/auth'
 import { query } from '@/lib/db'
+import { getCurrentAdminAccess, hasAdminPermission } from '@/lib/admin-access'
 
 // ── Helper verifikasi super admin ─────────────────────────────────────────────
-async function checkSuperAdmin() {
+async function checkUserManager() {
   const session = await getSession()
-  if (!session || session.role !== 'super-admin') {
-    throw new Error('Akses ditolak. Hanya Super Admin yang diizinkan.')
+  const access = await getCurrentAdminAccess()
+  if (!session || !hasAdminPermission(access, 'manage-users')) {
+    throw new Error('Akses ditolak. Anda tidak memiliki izin mengelola pengguna.')
   }
-  return session
+  return access
 }
 
 // ─── 1. CREATE USER ACTION ───────────────────────────────────────────────────
 export async function createUserAction(formData) {
   try {
-    const session = await checkSuperAdmin()
+    const session = await checkUserManager()
 
     const name = formData.get('name')?.trim()
     const email = formData.get('email')?.trim().toLowerCase()
@@ -58,6 +60,10 @@ export async function createUserAction(formData) {
     const validRoles = ['super-admin', 'admin-dinas', 'admin-kecamatan', 'admin-kelurahan']
     if (!validRoles.includes(role)) {
       return { error: 'Role / peran yang dipilih tidak valid.' }
+    }
+
+    if (session.role !== 'super-admin' && (role !== session.role || instansi !== session.instansi)) {
+      return { error: 'Anda hanya dapat membuat akun dengan role dan instansi yang sama dengan akun Anda.' }
     }
 
     if (role !== 'super-admin' && !instansi) {
@@ -108,7 +114,7 @@ export async function createUserAction(formData) {
 // ─── 2. UPDATE USER ACTION ───────────────────────────────────────────────────
 export async function updateUserAction(formData) {
   try {
-    const session = await checkSuperAdmin()
+    const session = await checkUserManager()
 
     const id = formData.get('id')
     const name = formData.get('name')?.trim()
@@ -145,6 +151,16 @@ export async function updateUserAction(formData) {
 
     if (role !== 'super-admin' && !instansi) {
       return { error: 'Instansi / OPD wajib dipilih untuk peran ini.' }
+    }
+
+    if (session.role !== 'super-admin') {
+      const target = await query('SELECT role, instansi FROM users WHERE id = $1 AND deleted_at IS NULL', [id])
+      if (!target.rows[0] || target.rows[0].role === 'super-admin' || target.rows[0].instansi !== session.instansi) {
+        return { error: 'Anda hanya dapat mengubah akun aktif pada instansi Anda sendiri.' }
+      }
+      if (role !== session.role || instansi !== session.instansi) {
+        return { error: 'Anda tidak dapat mengubah role atau instansi akun.' }
+      }
     }
 
     // Periksa duplikasi email selain user ini
@@ -211,10 +227,17 @@ export async function updateUserAction(formData) {
 // ─── 3. SOFT DELETE USER ACTION ──────────────────────────────────────────────
 export async function softDeleteUserAction(userId) {
   try {
-    const session = await checkSuperAdmin()
+    const session = await checkUserManager()
 
     if (userId === session.id) {
       return { error: 'Tidak dapat menghapus akun Anda sendiri yang sedang aktif.' }
+    }
+
+    if (session.role !== 'super-admin') {
+      const target = await query('SELECT role, instansi FROM users WHERE id = $1 AND deleted_at IS NULL', [userId])
+      if (!target.rows[0] || target.rows[0].role === 'super-admin' || target.rows[0].instansi !== session.instansi) {
+        return { error: 'Anda hanya dapat menghapus akun aktif pada instansi Anda sendiri.' }
+      }
     }
 
     const res = await query(
@@ -257,7 +280,14 @@ export async function softDeleteUserAction(userId) {
 // ─── 4. RESTORE USER ACTION ──────────────────────────────────────────────────
 export async function restoreUserAction(userId) {
   try {
-    const session = await checkSuperAdmin()
+    const session = await checkUserManager()
+
+    if (session.role !== 'super-admin') {
+      const target = await query('SELECT role, instansi FROM users WHERE id = $1 AND deleted_at IS NOT NULL', [userId])
+      if (!target.rows[0] || target.rows[0].role === 'super-admin' || target.rows[0].instansi !== session.instansi) {
+        return { error: 'Anda hanya dapat memulihkan akun pada instansi Anda sendiri.' }
+      }
+    }
 
     const res = await query(
       `UPDATE users
@@ -299,10 +329,17 @@ export async function restoreUserAction(userId) {
 // ─── 5. PERMANENT DELETE USER ACTION ─────────────────────────────────────────
 export async function permanentDeleteUserAction(userId) {
   try {
-    const session = await checkSuperAdmin()
+    const session = await checkUserManager()
 
     if (userId === session.id) {
       return { error: 'Tidak dapat menghapus permanen akun Anda sendiri.' }
+    }
+
+    if (session.role !== 'super-admin') {
+      const target = await query('SELECT role, instansi FROM users WHERE id = $1 AND deleted_at IS NOT NULL', [userId])
+      if (!target.rows[0] || target.rows[0].role === 'super-admin' || target.rows[0].instansi !== session.instansi) {
+        return { error: 'Anda hanya dapat menghapus permanen akun pada instansi Anda sendiri.' }
+      }
     }
 
     // Ambil data user sebelum dihapus

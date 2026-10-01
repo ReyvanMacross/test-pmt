@@ -3,14 +3,18 @@ import { getSession } from '@/lib/auth'
 import { query } from '@/lib/db'
 import WebsiteTable from './WebsiteTable'
 import NetworkHeader from './NetworkHeader'
+import { getCurrentAdminAccess, hasAdminPermission } from '@/lib/admin-access'
 
 export const metadata = { title: 'Manajemen Website Perangkat Daerah' }
 
 export default async function NetworkAdminPage() {
   const session = await getSession()
   if (!session) redirect('/login')
+  const access = await getCurrentAdminAccess()
+  const canViewAllWebsites = hasAdminPermission(access, 'manage-all-websites')
+  if (!canViewAllWebsites && !hasAdminPermission(access, 'manage-assigned-website')) redirect('/admin/dashboard')
 
-  const isSuperAdmin = session.role === 'super-admin'
+  const isSuperAdmin = canViewAllWebsites
 
   let websites = []
   let templates = []

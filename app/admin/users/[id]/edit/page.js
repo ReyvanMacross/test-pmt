@@ -1,6 +1,7 @@
 import { notFound, redirect } from 'next/navigation'
 import { getSession } from '@/lib/auth'
 import { query } from '@/lib/db'
+import { getCurrentAdminAccess, hasAdminPermission } from '@/lib/admin-access'
 import EditUserForm from './EditUserForm'
 
 export const metadata = {
@@ -10,7 +11,8 @@ export const metadata = {
 export default async function EditUserPage({ params }) {
   const session = await getSession()
   if (!session) redirect('/login')
-  if (session.role !== 'super-admin') redirect('/admin/dashboard')
+  const access = await getCurrentAdminAccess()
+  if (!hasAdminPermission(access, 'manage-users')) redirect('/admin/dashboard')
 
   const { id } = await params
 
@@ -21,9 +23,9 @@ export default async function EditUserPage({ params }) {
     const res = await query(
       `SELECT id, name, email, role, instansi, permissions, created_at, updated_at, deleted_at
        FROM users
-       WHERE id = $1
+       WHERE id = $1 AND ($2::boolean OR instansi = $3)
        LIMIT 1`,
-      [id]
+      [id, access.role === 'super-admin', access.instansi]
     )
 
     if (res.rows.length === 0) {

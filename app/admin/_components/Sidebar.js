@@ -5,9 +5,10 @@ import Image from 'next/image'
 import { usePathname } from 'next/navigation'
 import { logoutAction } from '@/app/(auth)/login/actions'
 
-export default function Sidebar({ userRole }) {
+export default function Sidebar({ userRole, permissions = [] }) {
   const pathname = usePathname()
   const isSuperAdmin = userRole === 'super-admin'
+  const hasPermission = (permission) => isSuperAdmin || permissions.includes(permission)
 
   function isKelolaWebsiteActive() {
     return pathname.startsWith('/admin/network')
@@ -120,7 +121,7 @@ export default function Sidebar({ userRole }) {
 
           <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: '4px' }}>
             {/* 1. Kelola Website */}
-            <li>
+            {hasPermission('manage-all-websites') || hasPermission('manage-assigned-website') ? <li>
               <Link
                 href="/admin/network"
                 style={{
@@ -164,7 +165,7 @@ export default function Sidebar({ userRole }) {
                 </svg>
                 <span>Kelola Website</span>
               </Link>
-            </li>
+            </li> : null}
 
             {/* 2. Dashboard */}
             <li>
@@ -214,9 +215,10 @@ export default function Sidebar({ userRole }) {
             </li>
 
             {/* Khusus Super Admin: Templates Web, User Management, Activity Logs */}
-            {isSuperAdmin && (
+            {(hasPermission('manage-templates') || hasPermission('manage-users') || hasPermission('view-all-logs') || hasPermission('view-own-logs')) && (
               <>
                 {/* 3. Templates Web */}
+                {hasPermission('manage-templates') && <>
                 <li>
                   <Link
                     href="/admin/templates"
@@ -262,8 +264,10 @@ export default function Sidebar({ userRole }) {
                     <span>Templates Web</span>
                   </Link>
                 </li>
+                </>}
 
                 {/* 4. User Management */}
+                {hasPermission('manage-users') && <>
                 <li>
                   <Link
                     href="/admin/users"
@@ -309,8 +313,10 @@ export default function Sidebar({ userRole }) {
                     <span>User Management</span>
                   </Link>
                 </li>
+                </>}
 
                 {/* 5. Activity Logs */}
+                {(hasPermission('view-all-logs') || hasPermission('view-own-logs')) && <>
                 <li>
                   <Link
                     href="/admin/activities"
@@ -356,6 +362,7 @@ export default function Sidebar({ userRole }) {
                     <span>Activity Logs</span>
                   </Link>
                 </li>
+                </>}
               </>
             )}
           </ul>
