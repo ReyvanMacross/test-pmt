@@ -24,3 +24,20 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* Keep secondary labels readable across the public portal template. */
+.public-portal [class~="text-xs"] {
+  font-size: 0.875rem;
+  line-height: 1.4rem;
+}
+
+.public-portal [class~="text-[11px]"] {
+  font-size: 0.8125rem;
+  line-height: 1.25rem;
+}
+
+.public-portal [class~="text-[10px]"],
+.public-portal [class~="text-[9px]"] {
+  font-size: 0.75rem;
+  line-height: 1.125rem;
+}

@@ -1,19 +1,15 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import { redirect } from 'next/navigation'
 import { query } from '@/lib/db'
 import { getSession } from '@/lib/auth'
+import { canManageWebsite } from '@/lib/website-access'
 
 // ─── Helper Otorisasi Website ─────────────────────────────────────────────────
 async function authorizeWebsite(websiteId, session) {
-  if (session.role === 'super-admin') return true
-
-  const res = await query(
-    'SELECT user_id FROM websites WHERE id = $1 AND deleted_at IS NULL LIMIT 1',
-    [websiteId]
-  )
-  if (res.rows.length === 0 || res.rows[0].user_id !== session.id) {
+  const res = await query('SELECT id, user_id FROM websites WHERE id = $1 AND deleted_at IS NULL LIMIT 1', [websiteId])
+  const website = res.rows[0]
+  if (!website || !(await canManageWebsite(session, websiteId, website.user_id))) {
     throw new Error('Anda tidak memiliki izin mengelola konten website ini.')
   }
   return true
@@ -38,15 +34,12 @@ async function getOrCreateProfileMenuItemId() {
 // ─── Action: Simpan Profil Wilayah ───────────────────────────────────────────
 export async function saveProfileContentAction(websiteId, formData) {
   const session = await getSession()
-  if (!session) redirect('/login')
+  if (!session) return { error: 'Sesi berakhir. Silakan masuk kembali.' }
 
   try {
     await authorizeWebsite(websiteId, session)
 
     // Ambil semua field dari formData
-    const banner_title = formData.get('bannerTitle')?.trim() || null
-    const banner_subtitle = formData.get('bannerDescription')?.trim() || null
-
     const luas_wilayah = formData.get('statLuas')?.trim() || null
     const jumlah_rw = formData.get('statRW')?.trim() || null
     const jumlah_rt = formData.get('statRT')?.trim() || null
@@ -67,8 +60,6 @@ export async function saveProfileContentAction(websiteId, formData) {
     await query(
       `INSERT INTO wilayah_profiles (
         website_id,
-        banner_title,
-        banner_subtitle,
         luas_wilayah,
         jumlah_rw,
         jumlah_rt,
@@ -84,12 +75,10 @@ export async function saveProfileContentAction(websiteId, formData) {
         misi,
         updated_at
       ) VALUES (
-        $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, NOW()
+        $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, NOW()
       )
       ON CONFLICT (website_id)
       DO UPDATE SET
-        banner_title = EXCLUDED.banner_title,
-        banner_subtitle = EXCLUDED.banner_subtitle,
         luas_wilayah = EXCLUDED.luas_wilayah,
         jumlah_rw = EXCLUDED.jumlah_rw,
         jumlah_rt = EXCLUDED.jumlah_rt,
@@ -106,8 +95,6 @@ export async function saveProfileContentAction(websiteId, formData) {
         updated_at = NOW()`,
       [
         websiteId,
-        banner_title,
-        banner_subtitle,
         luas_wilayah,
         jumlah_rw,
         jumlah_rt,
@@ -127,8 +114,9 @@ export async function saveProfileContentAction(websiteId, formData) {
     // 2. Sinkronkan ke tabel contents untuk modul 'profil' agar status keterisian sinkron
     try {
       const menuItemId = await getOrCreateProfileMenuItemId()
-      const contentTitle = banner_title || 'Profil Wilayah'
-      const contentBody = visi || banner_subtitle || 'Konten profil wilayah'
+      const profileHasData = Boolean(visi || misi || luas_wilayah || jumlah_rw || jumlah_rt || total_jiwa || jumlah_kk || kepuasan_warga || batas_utara || batas_selatan || batas_timur || batas_barat || maps_embed_url)
+      const contentTitle = profileHasData ? 'Profil Wilayah' : null
+      const contentBody = [visi && `Visi: ${visi}`, misi && `Misi: ${misi}`].filter(Boolean).join('\n\n') || null
 
       await query(
         `INSERT INTO contents (website_id, menu_item_id, title, body, updated_at)

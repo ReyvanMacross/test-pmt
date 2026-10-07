@@ -50,6 +50,13 @@ function ModuleIcon({ name }) {
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
         </svg>
       )
+    case 'view_carousel':
+      return (
+        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <rect x="3" y="5" width="18" height="14" rx="2" strokeWidth="2" />
+          <path d="M7 5V3m10 2V3M7 19v2m10-2v2M8 9h8M8 13h5" strokeLinecap="round" strokeWidth="2" />
+        </svg>
+      )
     case 'verified_user':
     case 'security':
       return (
@@ -154,7 +161,7 @@ export default function ContentModulesClient({ website, existingContents = {} })
   }
 
   // Total modul
-  const totalModules = CONTENT_MODULES.length // 23
+  const totalModules = CONTENT_MODULES.length
 
   // Status Sinkronisasi: Hitung modul unik yang sudah diinput/diedit (default 0 jika belum ada yang diinput)
   const filledCount = useMemo(() => {
@@ -373,7 +380,7 @@ export default function ContentModulesClient({ website, existingContents = {} })
         </div>
       </div>
 
-      {/* ── 2. UNIFIED CONTENT CONTAINER (SEMUA 23 MODUL DITAMPILKAN PENUH TANPA INNER SCROLL) ─ */}
+      {/* ── 2. UNIFIED CONTENT CONTAINER (SEMUA MODUL DITAMPILKAN PENUH TANPA INNER SCROLL) ─ */}
       <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-sm">
         {filteredModules.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-12 text-center">
@@ -418,10 +425,12 @@ export default function ContentModulesClient({ website, existingContents = {} })
                       </span>
                     </div>
                   </div>
-                    {mod.actionType === 'Edit' || ['berita', 'galeri-gambar', 'galeri-video', 'pengumuman', 'inovasi', 'agenda-kegiatan', 'layanan'].includes(mod.slug) ? (
+                    {mod.actionType === 'Edit' || ['hero-slider', 'berita', 'galeri-gambar', 'galeri-video', 'pengumuman', 'inovasi', 'agenda-kegiatan', 'layanan'].includes(mod.slug) ? (
                     <Link
                       href={
-                          mod.slug === 'berita'
+                          mod.slug === 'hero-slider'
+                            ? `/admin/network/${website.id}/content/hero-slider`
+                            : mod.slug === 'berita'
                             ? `/admin/network/${website.id}/content/berita`
                             : mod.slug === 'galeri-gambar'
                               ? `/admin/network/${website.id}/content/galeri-gambar`

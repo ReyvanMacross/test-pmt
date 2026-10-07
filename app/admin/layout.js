@@ -4,6 +4,7 @@ import { query } from '@/lib/db'
 import { Plus_Jakarta_Sans } from 'next/font/google'
 import Sidebar from './_components/Sidebar'
 import Breadcrumb from './_components/Breadcrumb'
+import AdminMain from './_components/AdminMain'
 
 const jakarta = Plus_Jakarta_Sans({
   subsets: ['latin'],
@@ -89,10 +90,8 @@ export default async function AdminLayout({ children }) {
             </div>
           </header>
 
-          {/* Scrollable Main Area */}
-          <main className="flex-1 overflow-y-auto p-8 space-y-8">
-            {children}
-          </main>
+          {/* Only the active admin page owns scrolling. Hero Slider uses its own bounded scroll area. */}
+          <AdminMain>{children}</AdminMain>
         </div>
       </div>
     </div>

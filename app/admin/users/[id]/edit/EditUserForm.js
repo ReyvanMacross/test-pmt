@@ -55,7 +55,7 @@ function formatLastLogin(isoString) {
   return `${dateStr}, ${timeStr} WIB`
 }
 
-export default function EditUserForm({ user, currentUserId, lastLogin }) {
+export default function EditUserForm({ user, currentUserId, lastLogin, websites = [], initialAssignedWebsiteId = '' }) {
   const router = useRouter()
   const isCurrent = user.id === currentUserId
 
@@ -65,6 +65,7 @@ export default function EditUserForm({ user, currentUserId, lastLogin }) {
   const [confirmPassword, setConfirmPassword] = useState('')
   const [role, setRole] = useState(user.role || 'admin-kecamatan')
   const [instansi, setInstansi] = useState(user.instansi || '')
+  const [assignedWebsiteId, setAssignedWebsiteId] = useState(initialAssignedWebsiteId)
   
   // Permissions state
   const initialPerms = useMemo(() => {
@@ -95,6 +96,7 @@ export default function EditUserForm({ user, currentUserId, lastLogin }) {
 
   function handleRoleChange(newRole) {
     setRole(newRole)
+    setAssignedWebsiteId('')
     const newOpts = getInstansiOptionsByRole(newRole)
     // If current instansi not in new role options, set to top option
     const exists = newOpts.some((o) => o.value === instansi)
@@ -130,6 +132,10 @@ export default function EditUserForm({ user, currentUserId, lastLogin }) {
       setErrorMessage('Silakan pilih instansi / OPD.')
       return
     }
+    if (role !== 'super-admin' && !assignedWebsiteId) {
+      setErrorMessage('Pilih website yang akan ditugaskan kepada akun ini.')
+      return
+    }
 
     setLoading(true)
 
@@ -139,6 +145,7 @@ export default function EditUserForm({ user, currentUserId, lastLogin }) {
     formData.append('email', email)
     formData.append('role', role)
     formData.append('instansi', instansi)
+    formData.append('assignedWebsiteId', assignedWebsiteId)
     formData.append('permissions', JSON.stringify(permissions))
     if (password) {
       formData.append('password', password)
@@ -360,6 +367,15 @@ export default function EditUserForm({ user, currentUserId, lastLogin }) {
                     : 'instansi'
                 }...`}
               />
+
+              {role !== 'super-admin' && <div>
+                <label className="mb-2 block text-sm font-semibold text-slate-700" htmlFor="user-assigned-website">Website yang ditugaskan <span className="text-rose-500">*</span></label>
+                <select id="user-assigned-website" value={assignedWebsiteId} onChange={(event) => setAssignedWebsiteId(event.target.value)} required className="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-3.5 py-2.5 text-sm text-slate-900 outline-none focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20">
+                  <option value="">-- Pilih website --</option>
+                  {websites.filter((website) => role === 'admin-kecamatan' ? website.template_slug === 'kecamatan' : role === 'admin-kelurahan' ? website.template_slug === 'kelurahan' : role === 'admin-dinas' ? website.template_slug === 'dinas' : false).map((website) => <option key={website.id} value={website.id}>{website.name} (/{website.subdomain})</option>)}
+                </select>
+                <p className="mt-1.5 text-xs text-slate-500">Hak akses akun berlaku pada website ini sesuai pilihan akses di bawah.</p>
+              </div>}
 
               {/* Field 6: DAFTAR HAK AKSES TERHUBUNG */}
               <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-3">

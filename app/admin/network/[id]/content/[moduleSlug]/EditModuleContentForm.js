@@ -46,7 +46,7 @@ export default function EditModuleContentForm({ website, moduleMeta, initialCont
           sectionDesc: 'Pengaturan naskah profil PPID dan bagan alur/struktur pengelola PPID',
           uploadLabel: 'Gambar Bagan Alur / Berkas PPID',
           uploadHint: 'Unggah Berkas / Bagan PPID (PNG, JPG, WEBP, PDF - Maks. 5MB)',
-          accept: 'image/png, image/jpeg, image/jpg, image/webp, application/pdf',
+          accept: 'image/png, image/jpeg, image/jpg, image/webp, application/pdf,.doc,.docx,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document',
           defaultTitle: `PPID ${website.name || ''}`.trim(),
         }
       case 'daftar-informasi-publik':
@@ -55,7 +55,7 @@ export default function EditModuleContentForm({ website, moduleMeta, initialCont
           sectionDesc: 'Pengaturan naskah ringkasan dan berkas dokumen penetapan DIP',
           uploadLabel: 'Dokumen / Gambar Pendukung DIP',
           uploadHint: 'Unggah Berkas Dokumen / Bagan DIP (PNG, JPG, WEBP, PDF - Maks. 5MB)',
-          accept: 'image/png, image/jpeg, image/jpg, image/webp, application/pdf',
+          accept: 'image/png, image/jpeg, image/jpg, image/webp, application/pdf,.doc,.docx,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document',
           defaultTitle: `Daftar Informasi Publik ${website.name || ''}`.trim(),
         }
       case 'daftar-informasi-dikecualikan':
@@ -64,7 +64,7 @@ export default function EditModuleContentForm({ website, moduleMeta, initialCont
           sectionDesc: 'Pengaturan naskah dan berkas dokumen surat ketetapan uji konsekuensi',
           uploadLabel: 'Dokumen / Gambar Surat Penetapan',
           uploadHint: 'Unggah Berkas Ketetapan / Bagan (PNG, JPG, WEBP, PDF - Maks. 5MB)',
-          accept: 'image/png, image/jpeg, image/jpg, image/webp, application/pdf',
+          accept: 'image/png, image/jpeg, image/jpg, image/webp, application/pdf,.doc,.docx,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document',
           defaultTitle: `Daftar Informasi Dikecualikan ${website.name || ''}`.trim(),
         }
       case 'ppid-utama':
@@ -73,7 +73,7 @@ export default function EditModuleContentForm({ website, moduleMeta, initialCont
           sectionDesc: 'Pengaturan tautan, naskah integrasi dan berkas pedoman PPID Utama Kota Bandung',
           uploadLabel: 'Dokumen / Pedoman / Banner PPID Utama',
           uploadHint: 'Unggah Berkas / Banner (PNG, JPG, WEBP, PDF - Maks. 5MB)',
-          accept: 'image/png, image/jpeg, image/jpg, image/webp, application/pdf',
+          accept: 'image/png, image/jpeg, image/jpg, image/webp, application/pdf,.doc,.docx,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document',
           defaultTitle: `PPID Utama ${website.name || ''}`.trim(),
         }
       case 'informasi-wajib-berkala':
@@ -82,7 +82,7 @@ export default function EditModuleContentForm({ website, moduleMeta, initialCont
           sectionDesc: 'Pengaturan naskah laporan keuangan, RKA/DPA, LAKIP, dan dokumen berkala instansi',
           uploadLabel: 'Dokumen / Berkas Informasi Wajib Berkala',
           uploadHint: 'Unggah Berkas Dokumen (PDF, PNG, JPG, WEBP - Maks. 5MB)',
-          accept: 'image/png, image/jpeg, image/jpg, image/webp, application/pdf',
+          accept: 'image/png, image/jpeg, image/jpg, image/webp, application/pdf,.doc,.docx,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document',
           defaultTitle: `Informasi Wajib Berkala ${website.name || ''}`.trim(),
         }
       case 'informasi-tersedia-setiap-saat':
@@ -91,7 +91,7 @@ export default function EditModuleContentForm({ website, moduleMeta, initialCont
           sectionDesc: 'Pengaturan naskah regulasi, SOP, perjanjian kerjasama, dan daftar aset instansi',
           uploadLabel: 'Dokumen / Berkas Informasi Tersedia Setiap Saat',
           uploadHint: 'Unggah Berkas Dokumen (PDF, PNG, JPG, WEBP - Maks. 5MB)',
-          accept: 'image/png, image/jpeg, image/jpg, image/webp, application/pdf',
+          accept: 'image/png, image/jpeg, image/jpg, image/webp, application/pdf,.doc,.docx,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document',
           defaultTitle: `Informasi Tersedia Setiap Saat ${website.name || ''}`.trim(),
         }
       case 'informasi-serta-merta':
@@ -100,7 +100,7 @@ export default function EditModuleContentForm({ website, moduleMeta, initialCont
           sectionDesc: 'Pengaturan naskah pengumuman darurat, mitigasi bencana, dan informasi keselamatan publik',
           uploadLabel: 'Dokumen / Berkas Informasi Serta Merta',
           uploadHint: 'Unggah Berkas Dokumen / Infografis (PDF, PNG, JPG, WEBP - Maks. 5MB)',
-          accept: 'image/png, image/jpeg, image/jpg, image/webp, application/pdf',
+          accept: 'image/png, image/jpeg, image/jpg, image/webp, application/pdf,.doc,.docx,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document',
           defaultTitle: `Informasi Serta Merta ${website.name || ''}`.trim(),
         }
       case 'permohonan-informasi-online':
@@ -109,7 +109,7 @@ export default function EditModuleContentForm({ website, moduleMeta, initialCont
           sectionDesc: 'Pengaturan alur permohonan daring, SOP tata cara, dan berkas formulir permohonan',
           uploadLabel: 'Formulir / Bagan Prosedur Permohonan Informasi',
           uploadHint: 'Unggah Formulir / Bagan Prosedur (PDF, PNG, JPG, WEBP - Maks. 5MB)',
-          accept: 'image/png, image/jpeg, image/jpg, image/webp, application/pdf',
+          accept: 'image/png, image/jpeg, image/jpg, image/webp, application/pdf,.doc,.docx,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document',
           defaultTitle: `Permohonan Informasi Online ${website.name || ''}`.trim(),
         }
       case 'pengajuan-keberatan-online':
@@ -118,7 +118,7 @@ export default function EditModuleContentForm({ website, moduleMeta, initialCont
           sectionDesc: 'Pengaturan naskah layanan keberatan informasi publik dan berkas formulir pengajuan keberatan',
           uploadLabel: 'Formulir / Bagan Prosedur Pengajuan Keberatan',
           uploadHint: 'Unggah Formulir / Bagan Keberatan (PDF, PNG, JPG, WEBP - Maks. 5MB)',
-          accept: 'image/png, image/jpeg, image/jpg, image/webp, application/pdf',
+          accept: 'image/png, image/jpeg, image/jpg, image/webp, application/pdf,.doc,.docx,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document',
           defaultTitle: `Pengajuan Keberatan Online ${website.name || ''}`.trim(),
         }
       case 'informasi':
@@ -136,7 +136,7 @@ export default function EditModuleContentForm({ website, moduleMeta, initialCont
           sectionDesc: `Pengaturan naskah dan unggah berkas gambar / dokumen pendukung ${moduleMeta.title.toLowerCase()} instansi`,
           uploadLabel: `Gambar / Berkas Pendukung ${moduleMeta.title}`,
           uploadHint: 'Unggah File Pendukung (PNG, JPG, WEBP, PDF - Maks. 5MB)',
-          accept: 'image/png, image/jpeg, image/jpg, image/webp, application/pdf',
+          accept: 'image/png, image/jpeg, image/jpg, image/webp, application/pdf,.doc,.docx,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document',
           defaultTitle: `${moduleMeta.title} ${website.name || ''}`.trim(),
         }
     }

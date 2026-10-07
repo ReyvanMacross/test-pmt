@@ -1,3 +1,4 @@
+import { canManageWebsite } from '@/lib/website-access'
 import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
 import { ArrowLeft } from 'lucide-react'
@@ -21,7 +22,7 @@ export default async function EditInnovationPage({ params }) {
   const websiteResult = await query('SELECT id, user_id, name, subdomain FROM websites WHERE id = $1 AND deleted_at IS NULL LIMIT 1', [id])
   const website = websiteResult.rows[0]
   if (!website) notFound()
-  if (!hasAdminPermission(access, 'manage-all-websites') && website.user_id !== session.id) redirect('/admin/network')
+  if (!(await canManageWebsite(session, website.id, website.user_id))) redirect('/admin/network')
   const innovationResult = await query('SELECT id, title, description, launch_year, application_url, video_url, cover_path, cover_name, cover_type, cover_size FROM innovations WHERE id = $1 AND website_id = $2 LIMIT 1', [innovationId, website.id])
   const innovation = innovationResult.rows[0]
   if (!innovation) notFound()

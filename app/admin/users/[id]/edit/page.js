@@ -18,6 +18,8 @@ export default async function EditUserPage({ params }) {
 
   let user = null
   let lastLogin = null
+  let websites = []
+  let assignedWebsiteId = ''
 
   try {
     const res = await query(
@@ -33,6 +35,20 @@ export default async function EditUserPage({ params }) {
     }
 
     user = res.rows[0]
+
+    const [assigned, websiteOptions] = await Promise.all([
+      query('SELECT website_id FROM website_user_access WHERE user_id = $1 ORDER BY website_id LIMIT 1', [id]),
+      query(
+        `SELECT DISTINCT w.id, w.name, w.subdomain, t.slug AS template_slug
+         FROM websites w JOIN templates t ON t.id = w.template_id
+         LEFT JOIN website_user_access wa ON wa.website_id = w.id AND wa.user_id = $1
+         WHERE w.deleted_at IS NULL AND ($2::boolean OR w.user_id = $1 OR wa.user_id = $1)
+         ORDER BY w.name`,
+        [session.id, access.role === 'super-admin']
+      ),
+    ])
+    assignedWebsiteId = assigned.rows[0]?.website_id ? String(assigned.rows[0].website_id) : ''
+    websites = websiteOptions.rows
 
     // Ambil log login terakhir
     const resLog = await query(
@@ -58,6 +74,8 @@ export default async function EditUserPage({ params }) {
         user={user}
         currentUserId={session.id}
         lastLogin={lastLogin}
+        websites={websites}
+        initialAssignedWebsiteId={assignedWebsiteId}
       />
     </div>
   )

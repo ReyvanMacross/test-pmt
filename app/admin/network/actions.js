@@ -5,6 +5,7 @@ import { redirect } from 'next/navigation'
 import { query } from '@/lib/db'
 import { getSession } from '@/lib/auth'
 import { getCurrentAdminAccess, hasAdminPermission } from '@/lib/admin-access'
+import { canManageWebsite } from '@/lib/website-access'
 
 // Helper otorisasi website (termasuk yang sudah di-trash)
 async function authorizeWebsite(websiteId, session) {
@@ -15,10 +16,10 @@ async function authorizeWebsite(websiteId, session) {
   }
 
   const res = await query(
-    'SELECT user_id FROM websites WHERE id = $1 LIMIT 1',
+    'SELECT id, user_id FROM websites WHERE id = $1 LIMIT 1',
     [websiteId]
   )
-  if (res.rows.length === 0 || res.rows[0].user_id !== session.id) {
+  if (res.rows.length === 0 || !(await canManageWebsite(session, websiteId, res.rows[0].user_id))) {
     throw new Error('Anda tidak memiliki izin mengelola website ini.')
   }
   return true
@@ -40,6 +41,18 @@ export async function createWebsiteAction(formData) {
 
   if (!name || !subdomain || !template_id) {
     return { error: 'Nama, subdomain, dan template wajib diisi.' }
+  }
+
+  const accountRole = access?.role || session.role
+  const expectedTemplate = { 'admin-dinas': 'dinas', 'admin-kecamatan': 'kecamatan', 'admin-kelurahan': 'kelurahan' }[accountRole]
+  if (accountRole !== 'super-admin' && !expectedTemplate) {
+    return { error: 'Role akun Anda tidak memiliki template website yang dapat digunakan.' }
+  }
+  if (expectedTemplate) {
+    const selectedTemplate = await query('SELECT slug FROM templates WHERE id = $1 AND is_active = true LIMIT 1', [template_id])
+    if (selectedTemplate.rows[0]?.slug !== expectedTemplate) {
+      return { error: `Akun ${accountRole.replace('admin-', '')} hanya dapat membuat website dengan template ${expectedTemplate}.` }
+    }
   }
 
   // Validasi format subdomain
@@ -109,6 +122,19 @@ export async function updateWebsiteAction(id, formData) {
 
   if (!name || !subdomain || !template_id) {
     return { error: 'Nama, subdomain, dan template wajib diisi.' }
+  }
+
+  const currentAccess = await getCurrentAdminAccess()
+  const accountRole = currentAccess?.role || session.role
+  const expectedTemplate = { 'admin-dinas': 'dinas', 'admin-kecamatan': 'kecamatan', 'admin-kelurahan': 'kelurahan' }[accountRole]
+  if (accountRole !== 'super-admin' && !expectedTemplate) {
+    return { error: 'Role akun Anda tidak memiliki template website yang dapat digunakan.' }
+  }
+  if (expectedTemplate) {
+    const selectedTemplate = await query('SELECT slug FROM templates WHERE id = $1 AND is_active = true LIMIT 1', [template_id])
+    if (selectedTemplate.rows[0]?.slug !== expectedTemplate) {
+      return { error: `Akun ${accountRole.replace('admin-', '')} hanya dapat menggunakan template ${expectedTemplate}.` }
+    }
   }
 
   const regex = /^[a-z0-9-]+$/

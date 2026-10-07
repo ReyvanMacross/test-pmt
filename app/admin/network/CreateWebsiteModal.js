@@ -11,7 +11,7 @@ export default function CreateWebsiteModal({ isOpen, onClose, templates }) {
   const [selectedTemplateId, setSelectedTemplateId] = useState(
     templates?.find((t) => t.slug === 'dinas')?.id || templates?.[0]?.id || ''
   )
-  const [category, setCategory] = useState('dinas')
+  const [category, setCategory] = useState(templates?.[0]?.slug || 'dinas')
 
   if (!isOpen) return null
 
@@ -151,9 +151,7 @@ export default function CreateWebsiteModal({ isOpen, onClose, templates }) {
                   onChange={handleCategoryChange}
                   className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm text-slate-800 bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all outline-none appearance-none cursor-pointer pr-10"
                 >
-                  <option value="dinas">Dinas &amp; Badan</option>
-                  <option value="kecamatan">Kecamatan</option>
-                  <option value="kelurahan">Kelurahan</option>
+                  {templates.map((template) => <option key={template.id} value={template.slug}>{template.name}</option>)}
                 </select>
                 <div className="absolute inset-y-0 right-0 flex items-center px-3.5 pointer-events-none text-slate-400">
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -289,7 +287,7 @@ export default function CreateWebsiteModal({ isOpen, onClose, templates }) {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
             <p className="leading-relaxed m-0">
-              Deployment otomatis akan menginisiasi database tenant baru, menerapkan konfigurasi domain Pemkot Bandung, dan membuat akun pengelola awal untuk OPD terkait.
+              Slug menjadi alamat path tenant pada host portal yang sedang aktif. Saat pengembangan, tautan mengikuti host lokal; host publik mengikuti konfigurasi domain saat aplikasi dipasang.
             </p>
           </div>
 

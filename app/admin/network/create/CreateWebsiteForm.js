@@ -140,7 +140,7 @@ export default function CreateWebsiteForm({ templates }) {
                 name="template_id"
                 value={tpl.id}
                 required
-                defaultChecked={tpl.slug === 'dinas'}
+                defaultChecked={String(tpl.id) === String(templates[0]?.id)}
                 style={{ marginTop: '3px' }}
               />
               <div>

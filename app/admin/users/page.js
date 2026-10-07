@@ -15,6 +15,7 @@ export default async function UserManagementPage() {
   if (!hasAdminPermission(access, 'manage-users')) redirect('/admin/dashboard')
 
   let users = []
+  let websites = []
   let trashedCount = 0
 
   try {
@@ -34,6 +35,17 @@ export default async function UserManagementPage() {
 
     users = resUsers.rows
     trashedCount = parseInt(resTrashed.rows[0].count, 10) || 0
+    const resWebsites = await query(
+      `SELECT DISTINCT w.id, w.name, w.subdomain, t.slug AS template_slug,
+              (EXISTS (SELECT 1 FROM website_user_access assigned WHERE assigned.website_id = w.id)
+               OR EXISTS (SELECT 1 FROM users existing_owner WHERE existing_owner.id = w.user_id AND existing_owner.role <> 'super-admin')) AS is_assigned
+       FROM websites w JOIN templates t ON t.id = w.template_id
+       LEFT JOIN website_user_access wa ON wa.website_id = w.id AND wa.user_id = $1
+       WHERE w.deleted_at IS NULL AND ($2::boolean OR w.user_id = $1 OR wa.user_id = $1)
+       ORDER BY w.name`,
+      [session.id, access.role === 'super-admin']
+    )
+    websites = resWebsites.rows
   } catch (err) {
     console.error('Error fetching users in UserManagementPage:', err)
   }
@@ -44,6 +56,7 @@ export default async function UserManagementPage() {
         initialUsers={users}
         currentUserId={session.id}
         trashedCount={trashedCount}
+        websites={websites}
       />
     </div>
   )

@@ -16,13 +16,14 @@ const ROLE_OPTIONS = [
   { value: 'admin-kelurahan', label: 'Admin Kelurahan (admin-kelurahan)' },
 ]
 
-export default function UserFormModal({ isOpen, onClose, onSuccess }) {
+export default function UserFormModal({ isOpen, onClose, onSuccess, websites = [] }) {
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [role, setRole] = useState('')
   const [instansi, setInstansi] = useState('')
+  const [assignedWebsiteId, setAssignedWebsiteId] = useState('')
   const [permissions, setPermissions] = useState([])
   const [loading, setLoading] = useState(false)
   const [errorMessage, setErrorMessage] = useState('')
@@ -42,6 +43,7 @@ export default function UserFormModal({ isOpen, onClose, onSuccess }) {
       setConfirmPassword('')
       setRole('')
       setInstansi('')
+      setAssignedWebsiteId('')
       setPermissions([])
       setErrorMessage('')
     }
@@ -88,6 +90,10 @@ export default function UserFormModal({ isOpen, onClose, onSuccess }) {
       setErrorMessage('Silakan pilih instansi / OPD.')
       return
     }
+    if (role !== 'super-admin' && !assignedWebsiteId) {
+      setErrorMessage('Pilih website yang akan ditugaskan kepada akun ini.')
+      return
+    }
 
     setLoading(true)
 
@@ -98,6 +104,7 @@ export default function UserFormModal({ isOpen, onClose, onSuccess }) {
     formData.append('confirmPassword', confirmPassword)
     formData.append('role', role)
     formData.append('instansi', instansi)
+    formData.append('assignedWebsiteId', assignedWebsiteId)
     formData.append('permissions', JSON.stringify(permissions))
 
     try {
@@ -258,6 +265,15 @@ export default function UserFormModal({ isOpen, onClose, onSuccess }) {
                   }...`
             }
           />
+
+          {role !== 'super-admin' && <div>
+            <label className="mb-1.5 block text-xs font-semibold text-slate-700" htmlFor="user-assigned-website">Website yang ditugaskan <span className="text-rose-500">*</span></label>
+            <select id="user-assigned-website" value={assignedWebsiteId} onChange={(event) => setAssignedWebsiteId(event.target.value)} required className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm text-slate-800 outline-none focus:border-blue-500 focus:bg-white focus:ring-2 focus:ring-blue-500/20">
+              <option value="">-- Pilih website --</option>
+              {websites.filter((website) => !website.is_assigned && (role === 'admin-kecamatan' ? website.template_slug === 'kecamatan' : role === 'admin-kelurahan' ? website.template_slug === 'kelurahan' : role === 'admin-dinas' ? website.template_slug === 'dinas' : false)).map((website) => <option key={website.id} value={website.id}>{website.name} (/{website.subdomain})</option>)}
+            </select>
+            <p className="mt-1.5 text-xs text-slate-500">Akun terhubung ke website ini. Hak akses modulnya mengikuti pilihan di bawah.</p>
+          </div>}
 
           {/* Daftar Hak Akses Terhubung */}
           <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-3 mt-3">

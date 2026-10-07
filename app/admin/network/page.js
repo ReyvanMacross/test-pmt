@@ -12,6 +12,21 @@ export default async function NetworkAdminPage() {
   if (!session) redirect('/login')
   const access = await getCurrentAdminAccess()
   const canViewAllWebsites = hasAdminPermission(access, 'manage-all-websites')
+  const accountRole = access?.role || session.role
+  if (accountRole !== 'super-admin') {
+    const assigned = await query(
+      `SELECT w.id FROM websites w WHERE w.deleted_at IS NULL
+       AND (w.user_id = $1 OR EXISTS (
+         SELECT 1 FROM website_user_access wa WHERE wa.website_id = w.id AND wa.user_id = $1
+       ))
+       ORDER BY CASE WHEN EXISTS (
+         SELECT 1 FROM website_user_access wa WHERE wa.website_id = w.id AND wa.user_id = $1
+       ) THEN 0 ELSE 1 END, w.created_at DESC LIMIT 1`,
+      [session.id]
+    )
+    if (assigned.rows[0]) redirect(`/admin/network/${assigned.rows[0].id}/content`)
+    redirect('/admin/dashboard')
+  }
   if (!canViewAllWebsites && !hasAdminPermission(access, 'manage-assigned-website')) redirect('/admin/dashboard')
 
   const isSuperAdmin = canViewAllWebsites
@@ -28,7 +43,8 @@ export default async function NetworkAdminPage() {
     const resTemplates = await query(
       `SELECT id, name, slug, description FROM templates WHERE is_active = true ORDER BY id ASC`
     )
-    templates = resTemplates.rows
+    const allowedTemplate = { 'admin-dinas': 'dinas', 'admin-kecamatan': 'kecamatan', 'admin-kelurahan': 'kelurahan' }[accountRole]
+    templates = accountRole === 'super-admin' ? resTemplates.rows : resTemplates.rows.filter((template) => template.slug === allowedTemplate)
 
     // 1. Query Daftar Website
     let sql = `
@@ -41,7 +57,7 @@ export default async function NetworkAdminPage() {
     const params = []
 
     if (!isSuperAdmin) {
-      sql += ' AND w.user_id = $1'
+      sql += ' AND (w.user_id = $1 OR EXISTS (SELECT 1 FROM website_user_access wa WHERE wa.website_id = w.id AND wa.user_id = $1))'
       params.push(session.id)
     }
 
@@ -51,7 +67,7 @@ export default async function NetworkAdminPage() {
     websites = res.rows
 
     // 2. Query Metrik Statistik
-    const userFilter = isSuperAdmin ? '' : ' AND w.user_id = $1'
+    const userFilter = isSuperAdmin ? '' : ' AND (w.user_id = $1 OR EXISTS (SELECT 1 FROM website_user_access wa WHERE wa.website_id = w.id AND wa.user_id = $1))'
     const metricParams = isSuperAdmin ? [] : [session.id]
 
     const [resDinas, resKec, resKel, resTotal] = await Promise.all([

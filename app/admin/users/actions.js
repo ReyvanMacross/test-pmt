@@ -5,6 +5,7 @@ import bcrypt from 'bcryptjs'
 import { getSession } from '@/lib/auth'
 import { query } from '@/lib/db'
 import { getCurrentAdminAccess, hasAdminPermission } from '@/lib/admin-access'
+import { canManageWebsite } from '@/lib/website-access'
 
 // ── Helper verifikasi super admin ─────────────────────────────────────────────
 async function checkUserManager() {
@@ -27,6 +28,7 @@ export async function createUserAction(formData) {
     const confirmPassword = formData.get('confirmPassword') || formData.get('password_confirmation')
     const role = formData.get('role') || 'admin-kelurahan'
     const instansi = formData.get('instansi')?.trim() || ''
+    const assignedWebsiteId = String(formData.get('assignedWebsiteId') || '').trim()
     
     // Parse permissions array or json
     let permissions = []
@@ -69,6 +71,28 @@ export async function createUserAction(formData) {
     if (role !== 'super-admin' && !instansi) {
       return { error: 'Instansi / OPD wajib dipilih untuk peran ini.' }
     }
+    if (role !== 'super-admin' && !assignedWebsiteId) {
+      return { error: 'Pilih website yang akan ditugaskan kepada akun ini.' }
+    }
+    if (role !== 'super-admin') {
+      const expectedTemplate = { 'admin-dinas': 'dinas', 'admin-kecamatan': 'kecamatan', 'admin-kelurahan': 'kelurahan' }[role]
+      const assigned = await query(
+        `SELECT w.id FROM websites w JOIN templates t ON t.id = w.template_id
+         WHERE w.id = $1 AND w.deleted_at IS NULL AND t.slug = $2 LIMIT 1`,
+        [assignedWebsiteId, expectedTemplate]
+      )
+      if (!assigned.rows[0]) return { error: 'Website yang dipilih tidak sesuai dengan tipe akun.' }
+      if (!(await canManageWebsite(session, assignedWebsiteId))) return { error: 'Anda tidak memiliki akses untuk menugaskan akun ke website tersebut.' }
+      const existingAssignment = await query(
+        `SELECT 1 FROM website_user_access WHERE website_id = $1
+         UNION ALL
+         SELECT 1 FROM websites w JOIN users owner ON owner.id = w.user_id
+         WHERE w.id = $1 AND w.user_id <> $2 AND owner.role <> 'super-admin'
+         LIMIT 1`,
+        [assignedWebsiteId, session.id]
+      )
+      if (existingAssignment.rows[0]) return { error: 'Website tersebut sudah terhubung ke akun lain. Ubah penugasan melalui edit akun terkait.' }
+    }
 
     // Periksa apakah email sudah terdaftar
     const existing = await query('SELECT id FROM users WHERE email = $1', [email])
@@ -89,6 +113,14 @@ export async function createUserAction(formData) {
 
     const newUser = res.rows[0]
 
+    if (assignedWebsiteId && role !== 'super-admin') {
+      await query(
+        `INSERT INTO website_user_access (user_id, website_id, granted_by)
+         VALUES ($1, $2, $3) ON CONFLICT (user_id, website_id) DO NOTHING`,
+        [newUser.id, assignedWebsiteId, session.id]
+      )
+    }
+
     // Catat log aktivitas
     await query(
       `INSERT INTO activity_logs (user_id, action, description, properties)
@@ -97,7 +129,7 @@ export async function createUserAction(formData) {
         session.id,
         'create_user',
         `Membuat akun pengguna baru "${newUser.name}" (${newUser.email}) untuk instansi ${newUser.instansi || '-'} (${newUser.role}).`,
-        JSON.stringify({ created_user_id: newUser.id, role: newUser.role, instansi: newUser.instansi }),
+        JSON.stringify({ created_user_id: newUser.id, role: newUser.role, instansi: newUser.instansi, assigned_website_id: assignedWebsiteId || null }),
       ]
     )
 
@@ -123,6 +155,7 @@ export async function updateUserAction(formData) {
     const instansi = formData.get('instansi')?.trim() || ''
     const password = formData.get('password')
     const confirmPassword = formData.get('confirmPassword') || formData.get('password_confirmation')
+    const assignedWebsiteId = String(formData.get('assignedWebsiteId') || '').trim()
 
     // Parse permissions array or json
     let permissions = []
@@ -151,6 +184,19 @@ export async function updateUserAction(formData) {
 
     if (role !== 'super-admin' && !instansi) {
       return { error: 'Instansi / OPD wajib dipilih untuk peran ini.' }
+    }
+    if (role !== 'super-admin' && !assignedWebsiteId) {
+      return { error: 'Pilih website yang akan ditugaskan kepada akun ini.' }
+    }
+    if (role !== 'super-admin') {
+      const expectedTemplate = { 'admin-dinas': 'dinas', 'admin-kecamatan': 'kecamatan', 'admin-kelurahan': 'kelurahan' }[role]
+      const assigned = await query(
+        `SELECT w.id FROM websites w JOIN templates t ON t.id = w.template_id
+         WHERE w.id = $1 AND w.deleted_at IS NULL AND t.slug = $2 LIMIT 1`,
+        [assignedWebsiteId, expectedTemplate]
+      )
+      if (!assigned.rows[0]) return { error: 'Website yang dipilih tidak sesuai dengan tipe akun.' }
+      if (!(await canManageWebsite(session, assignedWebsiteId))) return { error: 'Anda tidak memiliki akses untuk menugaskan akun ke website tersebut.' }
     }
 
     if (session.role !== 'super-admin') {
@@ -201,6 +247,16 @@ export async function updateUserAction(formData) {
       return { error: 'Pengguna tidak ditemukan.' }
     }
 
+    await query('DELETE FROM website_user_access WHERE user_id = $1', [id])
+    if (assignedWebsiteId && role !== 'super-admin') {
+      await query('DELETE FROM website_user_access WHERE website_id = $1', [assignedWebsiteId])
+      await query(
+        `INSERT INTO website_user_access (user_id, website_id, granted_by)
+         VALUES ($1, $2, $3)`,
+        [id, assignedWebsiteId, session.id]
+      )
+    }
+
     // Catat log aktivitas
     await query(
       `INSERT INTO activity_logs (user_id, action, description, properties)
@@ -209,7 +265,7 @@ export async function updateUserAction(formData) {
         session.id,
         'update_user',
         `Memperbarui data akun pengguna "${updatedUser.name}" (${updatedUser.email}) instansi ${updatedUser.instansi || '-'}.`,
-        JSON.stringify({ target_user_id: updatedUser.id, role: updatedUser.role, instansi: updatedUser.instansi }),
+        JSON.stringify({ target_user_id: updatedUser.id, role: updatedUser.role, instansi: updatedUser.instansi, assigned_website_id: assignedWebsiteId || null }),
       ]
     )
 

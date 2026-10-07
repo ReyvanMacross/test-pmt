@@ -1,3 +1,4 @@
+import { canManageWebsite } from '@/lib/website-access'
 import { redirect, notFound } from 'next/navigation'
 import { getSession } from '@/lib/auth'
 import { query } from '@/lib/db'
@@ -34,7 +35,7 @@ export default async function EditProfilePage({ params }) {
   const website = wsRes.rows[0]
 
   // Otorisasi akses
-  if (session.role !== 'super-admin' && website.user_id !== session.id) {
+  if (!(await canManageWebsite(session, website.id, website.user_id))) {
     redirect('/admin/network')
   }
 

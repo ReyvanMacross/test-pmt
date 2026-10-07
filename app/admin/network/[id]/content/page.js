@@ -3,6 +3,7 @@ import { redirect, notFound } from 'next/navigation'
 import { getSession } from '@/lib/auth'
 import { query } from '@/lib/db'
 import ContentModulesClient from './ContentModulesClient'
+import { canManageWebsite } from '@/lib/website-access'
 
 export async function generateMetadata({ params }) {
   const { id } = await params
@@ -31,7 +32,7 @@ export default async function ContentManagementPage({ params }) {
   const website = res.rows[0]
 
   // Otorisasi
-  if (session.role !== 'super-admin' && website.user_id !== session.id) {
+  if (!(await canManageWebsite(session, website.id, website.user_id))) {
     redirect('/admin/network')
   }
 
@@ -79,13 +80,16 @@ export default async function ContentManagementPage({ params }) {
   }
 
   try {
-    const [news, albums, announcements, innovations, agendas, services] = await Promise.all([
+    const [news, albums, announcements, innovations, agendas, services, heroSlides] = await Promise.all([
       query('SELECT COUNT(*)::int AS count FROM news_items WHERE website_id = $1', [id]),
       query('SELECT type, COUNT(*)::int AS count FROM gallery_albums WHERE website_id = $1 GROUP BY type', [id]),
       query('SELECT COUNT(*)::int AS count FROM announcements WHERE website_id = $1', [id]),
       query('SELECT COUNT(*)::int AS count FROM innovations WHERE website_id = $1', [id]),
       query('SELECT COUNT(*)::int AS count FROM agendas WHERE website_id = $1', [id]),
       query('SELECT COUNT(*)::int AS count FROM services WHERE website_id = $1', [id]),
+      query(`SELECT COUNT(*)::int AS count FROM hero_slides WHERE website_id = $1
+        AND (NULLIF(btrim(badge_text), '') IS NOT NULL OR NULLIF(btrim(headline), '') IS NOT NULL
+          OR NULLIF(btrim(description), '') IS NOT NULL OR NULLIF(btrim(image_path), '') IS NOT NULL)`, [id]),
     ])
     const moduleRow = (slug) => existingContentsMap[slug] || { has_content: false }
     existingContentsMap.berita = {
@@ -123,6 +127,10 @@ export default async function ContentManagementPage({ params }) {
       ...moduleRow('layanan'),
       item_count: services.rows[0]?.count || 0,
       has_content: Boolean(moduleRow('layanan').has_content || services.rows[0]?.count),
+    }
+    existingContentsMap['hero-slider'] = {
+      item_count: heroSlides.rows[0]?.count || 0,
+      has_content: Boolean(heroSlides.rows[0]?.count),
     }
   } catch (err) {
     console.error('Error fetching structured content status:', err)
@@ -166,7 +174,7 @@ export default async function ContentManagementPage({ params }) {
         </div>
 
         <div className="flex items-center gap-3 flex-shrink-0">
-          <Link
+          {session.role === 'super-admin' && <Link
             href="/admin/network"
             className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-sm font-medium transition-colors shadow-xs cursor-pointer"
           >
@@ -174,7 +182,7 @@ export default async function ContentManagementPage({ params }) {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
             </svg>
             Kembali ke Jaringan
-          </Link>
+          </Link>}
           <a
             href={`/${website.subdomain}`}
             target="_blank"
@@ -190,7 +198,7 @@ export default async function ContentManagementPage({ params }) {
         </div>
       </div>
 
-      {/* ── Content Modules Client (Health Metric, Search, Tabs, All 23 Modules & Modal) ── */}
+      {/* ── Content Modules Client (Health Metric, Search, Tabs, All Modules & Modal) ── */}
       <ContentModulesClient
         key={contentVersion}
         website={website}

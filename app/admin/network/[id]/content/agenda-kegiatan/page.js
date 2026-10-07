@@ -1,3 +1,4 @@
+import { canManageWebsite } from '@/lib/website-access'
 import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
 import { getSession } from '@/lib/auth'
@@ -20,7 +21,7 @@ export default async function AgendaManagementPage({ params }) {
   const websiteResult = await query('SELECT id, user_id, name, subdomain FROM websites WHERE id = $1 AND deleted_at IS NULL LIMIT 1', [id])
   const website = websiteResult.rows[0]
   if (!website) notFound()
-  if (!hasAdminPermission(access, 'manage-all-websites') && website.user_id !== session.id) redirect('/admin/network')
+  if (!(await canManageWebsite(session, website.id, website.user_id))) redirect('/admin/network')
   const result = await query(
     `SELECT id, title, description, start_date, end_date, time_range, location, organizer, created_at, updated_at
      FROM agendas WHERE website_id = $1 ORDER BY start_date ASC, created_at DESC`, [website.id]

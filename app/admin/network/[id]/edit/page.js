@@ -1,6 +1,8 @@
+import { canManageWebsite } from '@/lib/website-access'
 import Link from 'next/link'
 import { redirect, notFound } from 'next/navigation'
 import { getSession } from '@/lib/auth'
+import { getCurrentAdminAccess } from '@/lib/admin-access'
 import { query } from '@/lib/db'
 import EditWebsiteForm from './EditWebsiteForm'
 import DeleteWebsiteButton from './DeleteWebsiteButton'
@@ -16,6 +18,8 @@ export default async function EditWebsitePage({ params }) {
   const { id } = await params
   const session = await getSession()
   if (!session) redirect('/login')
+  const access = await getCurrentAdminAccess()
+  if ((access?.role || session.role) !== 'super-admin') redirect('/admin/network')
 
   // Ambil data website beserta template & owner
   const res = await query(
@@ -33,7 +37,7 @@ export default async function EditWebsitePage({ params }) {
   const website = res.rows[0]
 
   // Otorisasi
-  if (session.role !== 'super-admin' && website.user_id !== session.id) {
+  if (!(await canManageWebsite(session, website.id, website.user_id))) {
     redirect('/admin/network')
   }
 

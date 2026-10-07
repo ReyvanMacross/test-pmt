@@ -3,12 +3,15 @@ import { redirect } from 'next/navigation'
 import { getSession } from '@/lib/auth'
 import { query } from '@/lib/db'
 import TrashedTable from './TrashedTable'
+import { getCurrentAdminAccess } from '@/lib/admin-access'
 
 export const metadata = { title: 'Sampah Website - Manajemen Website' }
 
 export default async function TrashedPage() {
   const session = await getSession()
   if (!session) redirect('/login')
+  const access = await getCurrentAdminAccess()
+  if ((access?.role || session.role) !== 'super-admin') redirect('/admin/network')
 
   const isSuperAdmin = session.role === 'super-admin'
 

@@ -163,7 +163,7 @@ export default function Sidebar({ userRole, permissions = [] }) {
                     strokeWidth="2"
                   />
                 </svg>
-                <span>Kelola Website</span>
+                <span>{!isSuperAdmin ? 'Kelola Konten' : 'Kelola Website'}</span>
               </Link>
             </li> : null}
 

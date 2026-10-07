@@ -1,3 +1,4 @@
+import { canManageWebsite } from '@/lib/website-access'
 import { notFound, redirect } from 'next/navigation'
 import { getSession } from '@/lib/auth'
 import { getCurrentAdminAccess, hasAdminPermission } from '@/lib/admin-access'
@@ -19,7 +20,7 @@ export default async function InnovationManagementPage({ params }) {
   const websiteResult = await query('SELECT id, user_id, name, subdomain FROM websites WHERE id = $1 AND deleted_at IS NULL LIMIT 1', [id])
   const website = websiteResult.rows[0]
   if (!website) notFound()
-  if (!hasAdminPermission(access, 'manage-all-websites') && website.user_id !== session.id) redirect('/admin/network')
+  if (!(await canManageWebsite(session, website.id, website.user_id))) redirect('/admin/network')
   const result = await query(
     `SELECT id, title, description, launch_year, application_url, video_url, cover_path, cover_name, cover_type, cover_size, created_at, updated_at
      FROM innovations WHERE website_id = $1 ORDER BY created_at DESC`, [website.id]

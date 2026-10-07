@@ -1,5 +1,7 @@
 'use server'
 
+
+import { canManageWebsite } from '@/lib/website-access'
 import { revalidatePath } from 'next/cache'
 import { getSession } from '@/lib/auth'
 import { getCurrentAdminAccess, hasAdminPermission } from '@/lib/admin-access'
@@ -13,7 +15,7 @@ async function authorize(websiteId) {
   if (!session || !access) throw new Error('Sesi berakhir. Silakan masuk kembali.')
   const result = await query('SELECT id, user_id, name FROM websites WHERE id = $1 AND deleted_at IS NULL LIMIT 1', [websiteId])
   const website = result.rows[0]
-  if (!website || (!hasAdminPermission(access, 'manage-all-websites') && website.user_id !== session.id)) {
+  if (!website || !(await canManageWebsite(session, website.id, website.user_id))) {
     throw new Error('Anda tidak memiliki izin mengelola layanan website ini.')
   }
   return { session, website }

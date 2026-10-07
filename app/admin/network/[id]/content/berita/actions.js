@@ -1,5 +1,7 @@
 'use server'
 
+
+import { canManageWebsite } from '@/lib/website-access'
 import { isIP } from 'node:net'
 import { resolve4, resolve6 } from 'node:dns/promises'
 import { revalidatePath } from 'next/cache'
@@ -131,7 +133,7 @@ async function authorizeWebsite(websiteId) {
   const row = website.rows[0]
   const canManageAll = hasAdminPermission(access, 'manage-all-websites')
   const canManageAssigned = hasAdminPermission(access, 'manage-assigned-website')
-  if (!row || (!canManageAll && (!canManageAssigned || row.user_id !== session.id))) {
+  if (!row || !(await canManageWebsite(session, websiteId, row.user_id))) {
     throw new Error('Anda tidak memiliki izin mengelola berita website ini.')
   }
   return { session, website: row }

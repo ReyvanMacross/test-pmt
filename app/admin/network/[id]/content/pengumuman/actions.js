@@ -1,15 +1,18 @@
 'use server'
 
+
+import { canManageWebsite } from '@/lib/website-access'
 import { randomUUID } from 'node:crypto'
-import { mkdir, unlink, writeFile } from 'node:fs/promises'
+import { unlink } from 'node:fs/promises'
 import path from 'node:path'
 import { revalidatePath } from 'next/cache'
 import { getSession } from '@/lib/auth'
 import { getCurrentAdminAccess, hasAdminPermission } from '@/lib/admin-access'
 import pool, { query } from '@/lib/db'
+import { removePortalFile, uploadPortalFile } from '@/lib/storage'
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024
-const ALLOWED_TYPES = new Set(['application/pdf', 'image/jpeg', 'image/png', 'image/webp', 'image/gif'])
+const ALLOWED_TYPES = new Set(['application/pdf', 'image/jpeg', 'image/png', 'image/webp', 'image/gif', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'])
 
 async function authorize(websiteId) {
   const session = await getSession()
@@ -17,7 +20,7 @@ async function authorize(websiteId) {
   if (!session || !access) throw new Error('Sesi berakhir. Silakan masuk kembali.')
   const result = await query('SELECT id, user_id, name FROM websites WHERE id = $1 AND deleted_at IS NULL LIMIT 1', [websiteId])
   const website = result.rows[0]
-  if (!website || (!hasAdminPermission(access, 'manage-all-websites') && website.user_id !== session.id)) {
+  if (!website || !(await canManageWebsite(session, website.id, website.user_id))) {
     throw new Error('Anda tidak memiliki izin mengelola pengumuman website ini.')
   }
   return { session, website }
@@ -35,23 +38,21 @@ function identifyAttachment(buffer, mimeType) {
   if (mimeType === 'image/png' && buffer.subarray(0, 8).equals(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]))) return '.png'
   if (mimeType === 'image/webp' && buffer.toString('ascii', 0, 4) === 'RIFF' && buffer.toString('ascii', 8, 12) === 'WEBP') return '.webp'
   if (mimeType === 'image/gif' && ['GIF87a', 'GIF89a'].includes(buffer.toString('ascii', 0, 6))) return '.gif'
+  if (mimeType === 'application/msword' && buffer.subarray(0, 8).equals(Buffer.from([0xd0, 0xcf, 0x11, 0xe0, 0xa1, 0xb1, 0x1a, 0xe1]))) return '.doc'
+  if (mimeType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' && buffer.subarray(0, 4).equals(Buffer.from([0x50, 0x4b, 0x03, 0x04]))) return '.docx'
   return null
 }
 
 async function prepareAttachment(file, websiteId) {
   if (!file || typeof file.arrayBuffer !== 'function' || file.size <= 0) return null
   if (file.size > MAX_FILE_SIZE) throw new Error('Ukuran lampiran maksimal 5 MB.')
-  if (!ALLOWED_TYPES.has(file.type)) throw new Error('Lampiran hanya mendukung PDF, JPG, PNG, WebP, atau GIF.')
+  if (!ALLOWED_TYPES.has(file.type)) throw new Error('Lampiran hanya mendukung PDF, JPG, PNG, WebP, GIF, DOC, atau DOCX.')
   const buffer = Buffer.from(await file.arrayBuffer())
   const extension = identifyAttachment(buffer, file.type)
   if (!extension) throw new Error('Isi berkas tidak sesuai dengan format lampiran yang dipilih.')
   const fileName = `${randomUUID()}${extension}`
-  const directory = path.join(process.cwd(), 'public', 'uploads', 'announcements', String(websiteId))
-  await mkdir(directory, { recursive: true })
-  const absolutePath = path.join(directory, fileName)
-  const publicPath = `/uploads/announcements/${websiteId}/${fileName}`
-  await writeFile(absolutePath, buffer, { flag: 'wx' })
-  return { absolutePath, publicPath, originalName: String(file.name || fileName).slice(0, 255), mimeType: file.type, size: file.size }
+  const uploaded = await uploadPortalFile({ file, objectPath: `websites/${websiteId}/announcements/${fileName}` })
+  return { bucket: uploaded.bucket, storagePath: uploaded.path, publicPath: uploaded.publicUrl, originalName: String(file.name || fileName).slice(0, 255), mimeType: file.type, size: file.size }
 }
 
 function refresh(websiteId) {
@@ -100,7 +101,7 @@ export async function createAnnouncementAction(websiteId, formData) {
     refresh(website.id)
     return { success: true, message: 'Pengumuman berhasil diterbitkan.', announcement }
   } catch (error) {
-    if (attachment?.absolutePath) await unlink(attachment.absolutePath).catch(() => {})
+    if (attachment?.publicPath) await removePortalFile(attachment.publicPath).catch(() => {})
     console.error('Create announcement error:', error)
     return { error: error.message || 'Gagal membuat pengumuman.' }
   }
@@ -137,14 +138,18 @@ export async function updateAnnouncementAction(websiteId, announcementId, formDa
       announcement = result.rows[0]
     } catch (error) { await client.query('ROLLBACK'); throw error } finally { client.release() }
     if (oldAttachmentPath) {
+      if (await removePortalFile(oldAttachmentPath).catch(() => false)) {
+        // File baru sudah tersimpan; path lama Supabase sudah dibersihkan.
+      } else {
       const oldFile = path.resolve(process.cwd(), 'public', oldAttachmentPath.replace(/^\//, ''))
       const root = path.resolve(process.cwd(), 'public', 'uploads', 'announcements', String(website.id))
       if (oldFile.startsWith(`${root}${path.sep}`)) await unlink(oldFile).catch((error) => console.warn('Could not remove old announcement attachment:', error.message))
+      }
     }
     refresh(website.id)
     return { success: true, message: 'Perubahan pengumuman berhasil disimpan.', announcement }
   } catch (error) {
-    if (attachment?.absolutePath) await unlink(attachment.absolutePath).catch(() => {})
+    if (attachment?.publicPath) await removePortalFile(attachment.publicPath).catch(() => {})
     console.error('Update announcement error:', error)
     return { error: error.message || 'Gagal memperbarui pengumuman.' }
   }
@@ -164,9 +169,13 @@ export async function deleteAnnouncementAction(websiteId, announcementId) {
       await client.query('COMMIT')
     } catch (error) { await client.query('ROLLBACK'); throw error } finally { client.release() }
     if (deleted.attachment_path) {
+      if (await removePortalFile(deleted.attachment_path).catch(() => false)) {
+        // Supabase Storage file removed.
+      } else {
       const file = path.resolve(process.cwd(), 'public', deleted.attachment_path.replace(/^\//, ''))
       const root = path.resolve(process.cwd(), 'public', 'uploads', 'announcements', String(website.id))
       if (file.startsWith(`${root}${path.sep}`)) await unlink(file).catch((error) => console.warn('Could not remove announcement attachment:', error.message))
+      }
     }
     refresh(website.id)
     return { success: true, message: 'Pengumuman berhasil dihapus.' }

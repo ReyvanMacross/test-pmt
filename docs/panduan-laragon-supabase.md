@@ -25,6 +25,12 @@ Peralihan `DATABASE_URL` hanya mengalihkan query database. Itu tidak menyalin da
 3. Untuk uji cloud, buat project Supabase baru/kosong. Jangan gunakan SQL legacy `supabase_schema.sql`; file itu dibuat untuk model `profiles`/Supabase Auth dan bukan skema aplikasi saat ini.
 4. Gunakan `supabase_postgres_schema.sql` untuk project Supabase PostgreSQL baru. File ini membuat tabel yang digunakan aplikasi, indeks, RLS, dan seed modul menu. Ia tidak membuat akun admin.
 
+### Migrasi Hero Slider dan penugasan website
+
+Setelah skema dasar tersedia, jalankan [`202610020001_hero_slides_and_website_assignments.sql`](../supabase/migrations/202610020001_hero_slides_and_website_assignments.sql) satu kali pada **setiap database yang akan dipakai aplikasi** (Supabase maupun Laragon). Di Supabase, tempel isi file ke **SQL Editor** dan klik **Run**. Migrasi membuat penyimpanan tiga slide Hero Slider, relasi akun daerah ke website, mengisi slot kosong untuk website yang sudah ada, dan memindahkan banner lama dari Profil/Beranda ke Slide 1.
+
+Setelah migrasi, buat atau edit akun daerah dari **User Management**, pilih website dengan tipe template yang cocok, lalu atur hak akses akun. Akun daerah hanya bisa melihat/mengubah website yang ditugaskan dan harus memiliki hak `Kelola Website OPD Terhubung`. Super-admin tetap dapat mengelola semua website.
+
 ## A. Siapkan Supabase dengan SQL paste langsung
 
 1. Buka project Supabase, masuk ke **SQL Editor**, lalu pilih **New query**.

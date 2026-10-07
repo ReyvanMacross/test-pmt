@@ -1,9 +1,12 @@
 'use server'
 
+
+import { canManageWebsite } from '@/lib/website-access'
 import { revalidatePath } from 'next/cache'
 import { getSession } from '@/lib/auth'
 import { getCurrentAdminAccess, hasAdminPermission } from '@/lib/admin-access'
 import pool, { query } from '@/lib/db'
+import { removePortalFile } from '@/lib/storage'
 
 async function authorize(websiteId) {
   const session = await getSession()
@@ -11,7 +14,7 @@ async function authorize(websiteId) {
   if (!session || !access) throw new Error('Sesi berakhir. Silakan masuk kembali.')
   const result = await query('SELECT id, user_id, name FROM websites WHERE id = $1 AND deleted_at IS NULL LIMIT 1', [websiteId])
   const website = result.rows[0]
-  if (!website || (!hasAdminPermission(access, 'manage-all-websites') && website.user_id !== session.id)) {
+  if (!website || !(await canManageWebsite(session, website.id, website.user_id))) {
     throw new Error('Anda tidak memiliki izin mengelola galeri website ini.')
   }
   return { session, website }
@@ -119,7 +122,7 @@ export async function deleteVideoItemAction(websiteId, albumId, itemId) {
       const root = path.resolve(process.cwd(), 'public', 'uploads', 'gallery', String(website.id), String(albumId))
       const file = path.resolve(process.cwd(), 'public', item.path.slice(1))
       if (file.startsWith(`${root}${path.sep}`)) await unlink(file).catch((error) => console.warn('Could not remove video file:', error.message))
-    }
+    } else await removePortalFile(item.path).catch((error) => console.warn('Could not remove Supabase video:', error.message))
     refresh(website.id, albumId)
     return { success: true, message: 'Video berhasil dihapus.' }
   } catch (error) { console.error('Delete video item error:', error); return { error: error.message || 'Gagal menghapus video.' } }
@@ -130,14 +133,16 @@ export async function deleteVideoAlbumAction(websiteId, albumId) {
     const { session, website } = await authorize(websiteId)
     const client = await pool.connect()
     let title
+    let itemsToRemove = []
     let count = 0
     try {
       await client.query('BEGIN')
       const album = await client.query("SELECT id, title FROM gallery_albums WHERE id = $1 AND website_id = $2 AND type = 'video' FOR UPDATE", [albumId, website.id])
       if (!album.rows[0]) throw new Error('Album video tidak ditemukan.')
       title = album.rows[0].title
-      const items = await client.query('SELECT COUNT(*)::int AS count FROM gallery_items WHERE gallery_album_id = $1', [albumId])
-      count = items.rows[0].count
+      const items = await client.query('SELECT path FROM gallery_items WHERE gallery_album_id = $1', [albumId])
+      itemsToRemove = items.rows.map((row) => row.path)
+      count = itemsToRemove.length
       await client.query('DELETE FROM gallery_albums WHERE id = $1 AND website_id = $2', [albumId, website.id])
       await activity(client, session.id, website.id, 'delete_video_album', `${website.name}: menghapus album video "${title}" beserta ${count} item.`)
       await client.query('COMMIT')
@@ -147,6 +152,7 @@ export async function deleteVideoAlbumAction(websiteId, albumId) {
     const root = path.resolve(process.cwd(), 'public', 'uploads', 'gallery')
     const dir = path.resolve(root, String(website.id), String(albumId))
     if (dir.startsWith(`${root}${path.sep}`)) await rm(dir, { recursive: true, force: true }).catch((error) => console.warn('Could not remove video directory:', error.message))
+    await Promise.all(itemsToRemove.map((file) => removePortalFile(file).catch((error) => console.warn('Could not remove Supabase video:', error.message))))
     refresh(website.id)
     return { success: true, message: `Album video dihapus bersama ${count} item.` }
   } catch (error) { console.error('Delete video album error:', error); return { error: error.message || 'Gagal menghapus album video.' } }

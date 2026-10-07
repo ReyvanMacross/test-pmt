@@ -47,7 +47,7 @@ function getRoleBadge(role) {
 
 const PER_PAGE = 10
 
-export default function UserTable({ initialUsers, currentUserId, trashedCount = 0 }) {
+export default function UserTable({ initialUsers, currentUserId, trashedCount = 0, websites = [] }) {
   const [users, setUsers] = useState(initialUsers)
   const [search, setSearch] = useState('')
   const [page, setPage] = useState(1)
@@ -414,6 +414,7 @@ export default function UserTable({ initialUsers, currentUserId, trashedCount = 
           handleFormSuccess(msg)
           window.location.reload()
         }}
+        websites={websites}
       />
 
       {/* ── Delete Confirmation Modal ─────────────────────────────────── */}

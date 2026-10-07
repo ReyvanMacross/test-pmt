@@ -2,6 +2,9 @@ import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { getSession } from '@/lib/auth'
 import { query } from '@/lib/db'
+import { getCurrentAdminAccess } from '@/lib/admin-access'
+import { CONTENT_MODULES } from '@/lib/content-modules'
+import RoleDashboard from './RoleDashboard'
 
 export const metadata = { title: 'Dashboard Multi-Tenant - Pemerintah Kota Bandung' }
 
@@ -82,6 +85,75 @@ export default async function DashboardPage() {
   if (!session) redirect('/login')
 
   const isSuperAdmin = session.role === 'super-admin'
+
+  if (!isSuperAdmin) {
+    let user = { name: session.name || 'Admin Konten', email: session.email || '', role: session.role, instansi: '' }
+    let website = null
+    let filled = new Set()
+    let activities = []
+    let canViewAllLogs = false
+
+    try {
+      const access = await getCurrentAdminAccess()
+      if (access) {
+        user = { name: access.name, email: access.email, role: access.role, instansi: access.instansi }
+        canViewAllLogs = access.permissions?.includes('view-all-logs') || false
+      }
+      const result = await query(
+        `SELECT w.id, w.name, w.subdomain, w.status, w.created_at, t.slug AS template_slug
+         FROM websites w
+         JOIN templates t ON t.id = w.template_id
+         WHERE w.deleted_at IS NULL
+           AND (w.user_id = $1 OR EXISTS (
+             SELECT 1 FROM website_user_access wa WHERE wa.website_id = w.id AND wa.user_id = $1
+           ))
+         ORDER BY CASE WHEN EXISTS (
+           SELECT 1 FROM website_user_access wa WHERE wa.website_id = w.id AND wa.user_id = $1
+         ) THEN 0 ELSE 1 END, w.created_at DESC
+         LIMIT 1`,
+        [session.id]
+      )
+      website = result.rows[0] || null
+
+      if (website) {
+        const [contentRows, contactRows, customCounts] = await Promise.all([
+          query(`SELECT m.slug, c.title, c.body, c.images, c.files
+                 FROM contents c JOIN menu_items m ON m.id = c.menu_item_id WHERE c.website_id = $1`, [website.id]),
+          query(`SELECT contact_address, operating_hours, office_phone, whatsapp_phone, official_email,
+                        google_maps_url, instagram_username, facebook_page_name, youtube_channel_url
+                 FROM wilayah_profiles WHERE website_id = $1 LIMIT 1`, [website.id]),
+          query(`SELECT 'berita' AS slug, COUNT(*)::int AS count FROM news_items WHERE website_id = $1
+                 UNION ALL SELECT 'pengumuman', COUNT(*)::int FROM announcements WHERE website_id = $1
+                 UNION ALL SELECT 'inovasi', COUNT(*)::int FROM innovations WHERE website_id = $1
+                 UNION ALL SELECT 'agenda-kegiatan', COUNT(*)::int FROM agendas WHERE website_id = $1
+                 UNION ALL SELECT 'layanan', COUNT(*)::int FROM services WHERE website_id = $1
+                 UNION ALL SELECT 'galeri-gambar', COUNT(*)::int FROM gallery_albums WHERE website_id = $1 AND type = 'image'
+                 UNION ALL SELECT 'galeri-video', COUNT(*)::int FROM gallery_albums WHERE website_id = $1 AND type = 'video'
+                 UNION ALL SELECT 'hero-slider', COUNT(*)::int FROM hero_slides WHERE website_id = $1
+                   AND (NULLIF(btrim(badge_text), '') IS NOT NULL OR NULLIF(btrim(headline), '') IS NOT NULL
+                     OR NULLIF(btrim(description), '') IS NOT NULL OR NULLIF(btrim(image_path), '') IS NOT NULL)`, [website.id]),
+        ])
+
+        for (const row of contentRows.rows) {
+          const hasValue = Boolean(row.title?.trim() || row.body?.trim() || row.images?.length || row.files?.length)
+          if (hasValue) filled.add(row.slug)
+        }
+        const contact = contactRows.rows[0]
+        if (contact && Object.values(contact).some((value) => typeof value === 'string' && value.trim())) filled.add('kontak')
+        for (const row of customCounts.rows) if (row.count > 0) filled.add(row.slug)
+        const logRows = await query(
+          `SELECT id, action, description, created_at FROM activity_logs
+           WHERE website_id = $1 ORDER BY created_at DESC LIMIT 5`,
+          [website.id]
+        )
+        activities = logRows.rows.map((item) => ({ ...item, title: getActivityTitle(item.action) }))
+      }
+    } catch (error) {
+      console.error('Role dashboard data error:', error)
+    }
+
+    return <RoleDashboard user={user} website={website} filledModules={filled.size} totalModules={CONTENT_MODULES.length} activities={activities} canViewAllLogs={canViewAllLogs} />
+  }
 
   // 1. Ambil data user terkini dari database
   let userInfo = {

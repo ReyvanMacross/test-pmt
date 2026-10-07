@@ -1,12 +1,15 @@
 'use server'
 
+
+import { canManageWebsite } from '@/lib/website-access'
 import { randomUUID } from 'node:crypto'
-import { mkdir, unlink, writeFile, rm } from 'node:fs/promises'
+import { unlink, rm } from 'node:fs/promises'
 import path from 'node:path'
 import { revalidatePath } from 'next/cache'
 import { getSession } from '@/lib/auth'
 import { getCurrentAdminAccess, hasAdminPermission } from '@/lib/admin-access'
 import pool, { query } from '@/lib/db'
+import { removePortalFile, uploadPortalFile } from '@/lib/storage'
 
 const MAX_IMAGE_SIZE = 2 * 1024 * 1024
 
@@ -22,7 +25,7 @@ async function authorizeGalleryWebsite(websiteId) {
   const website = result.rows[0]
   const hasGlobalAccess = hasAdminPermission(access, 'manage-all-websites')
   const hasAssignedAccess = hasAdminPermission(access, 'manage-assigned-website')
-  if (!website || (!hasGlobalAccess && (!hasAssignedAccess || website.user_id !== session.id))) {
+  if (!website || !(await canManageWebsite(session, website.id, website.user_id))) {
     throw new Error('Anda tidak memiliki izin mengelola galeri website ini.')
   }
   return { session, website }
@@ -32,10 +35,6 @@ function revalidateGallery(websiteId, albumId) {
   revalidatePath(`/admin/network/${websiteId}/content`)
   revalidatePath(`/admin/network/${websiteId}/content/galeri-gambar`)
   if (albumId) revalidatePath(`/admin/network/${websiteId}/content/galeri-gambar/${albumId}`)
-}
-
-function publicUploadPath(websiteId, albumId, fileName) {
-  return `/uploads/gallery/${websiteId}/${albumId}/${fileName}`
 }
 
 function localPathFromPublicPath(publicPath) {
@@ -154,11 +153,8 @@ export async function uploadGalleryItemAction(websiteId, albumId, formData) {
     const extension = identifyImage(buffer)
     if (!extension) return { error: 'Format foto harus JPG, PNG, atau WebP.' }
     const fileName = `${randomUUID()}${extension}`
-    const uploadDir = path.join(process.cwd(), 'public', 'uploads', 'gallery', String(website.id), String(album.id))
-    await mkdir(uploadDir, { recursive: true })
-    const localFilePath = path.join(uploadDir, fileName)
-    savedPath = publicUploadPath(website.id, album.id, fileName)
-    await writeFile(localFilePath, buffer, { flag: 'wx' })
+    const uploaded = await uploadPortalFile({ file, objectPath: `websites/${website.id}/gallery/images/${album.id}/${fileName}` })
+    savedPath = uploaded.publicUrl
 
     const client = await pool.connect()
     let item
@@ -183,8 +179,12 @@ export async function uploadGalleryItemAction(websiteId, albumId, formData) {
     return { success: true, message: 'Foto berhasil diunggah.', item }
   } catch (error) {
     if (savedPath) {
-      const localFilePath = localPathFromPublicPath(savedPath)
-      if (localFilePath) await unlink(localFilePath).catch(() => {})
+      if (await removePortalFile(savedPath).catch(() => false)) {
+        console.error('Upload gallery image transaction failed after Storage upload.')
+      } else {
+        const localFilePath = localPathFromPublicPath(savedPath)
+        if (localFilePath) await unlink(localFilePath).catch(() => {})
+      }
     }
     console.error('Upload gallery image error:', error)
     return { error: error.message || 'Gagal mengunggah foto.' }
@@ -216,6 +216,7 @@ export async function deleteGalleryItemAction(websiteId, albumId, itemId) {
     }
     const localFilePath = localPathFromPublicPath(removedPath)
     if (localFilePath) await unlink(localFilePath).catch((error) => console.warn('Could not remove gallery file:', error.message))
+    else await removePortalFile(removedPath).catch((error) => console.warn('Could not remove Supabase gallery file:', error.message))
     revalidateGallery(website.id, albumId)
     return { success: true, message: 'Foto berhasil dihapus.' }
   } catch (error) {
@@ -251,6 +252,7 @@ export async function deleteGalleryAlbumAction(websiteId, albumId) {
     const albumDirectory = path.resolve(process.cwd(), 'public', 'uploads', 'gallery', String(website.id), String(albumId))
     const galleryRoot = path.resolve(process.cwd(), 'public', 'uploads', 'gallery')
     if (albumDirectory.startsWith(`${galleryRoot}${path.sep}`)) await rm(albumDirectory, { recursive: true, force: true }).catch((error) => console.warn('Could not remove gallery directory:', error.message))
+    await Promise.all(photos.map((photo) => removePortalFile(photo).catch((error) => console.warn('Could not remove Supabase gallery file:', error.message))))
     revalidateGallery(website.id)
     return { success: true, message: `Album berhasil dihapus beserta ${photos.length} foto.` }
   } catch (error) {

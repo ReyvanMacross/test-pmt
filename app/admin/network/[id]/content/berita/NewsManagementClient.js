@@ -105,7 +105,7 @@ export default function NewsManagementClient({ website, initialNews }) {
         </div>
         <form onSubmit={addNews} className="flex flex-col gap-3 sm:flex-row">
           <label className="sr-only" htmlFor="news-url">URL berita</label>
-          <input id="news-url" type="url" required value={url} onChange={(event) => setUrl(event.target.value)} placeholder="https://diskominfo.bandung.go.id/berita/..." className="min-w-0 flex-1 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-800 shadow-xs placeholder:text-slate-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20" />
+          <input id="news-url" type="url" required value={url} onChange={(event) => setUrl(event.target.value)} placeholder="https://contoh.go.id/berita/..." className="min-w-0 flex-1 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-800 shadow-xs placeholder:text-slate-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20" />
           <button type="submit" disabled={loading} className="inline-flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700 disabled:cursor-wait disabled:opacity-60">{loading ? <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white" /> : <Plus className="h-4 w-4" />}{loading ? 'Mengambil data…' : 'Tambah Berita'}</button>
         </form>
       </section>

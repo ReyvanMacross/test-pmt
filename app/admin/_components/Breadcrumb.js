@@ -5,7 +5,6 @@ import Link from 'next/link'
 import { CONTENT_MODULES } from '@/lib/content-modules'
 
 const breadcrumbMap = {
-  '/admin/network': 'Manajemen Website',
   '/admin/network/trashed': 'Sampah',
   '/admin/dashboard': 'Dashboard',
   '/admin/users': 'User Management',
@@ -30,14 +29,8 @@ export default function Breadcrumb() {
   // Always: Portal Multi-Tenant (root)
   crumbs.push({ label: 'Portal Multi-Tenant', href: '/admin/network', isHome: true })
 
-  // Manajemen Website (always present for /admin/network*)
+  // Do not add a Manajemen Website crumb: content pages are reached directly from the portal.
   if (pathname.startsWith('/admin/network')) {
-    crumbs.push({
-      label: 'Manajemen Website',
-      href: '/admin/network',
-      isCurrent: pathname === '/admin/network',
-    })
-
     // /admin/network/trashed
     if (pathname === '/admin/network/trashed') {
       crumbs.push({ label: 'Sampah', href: null, isCurrent: true })

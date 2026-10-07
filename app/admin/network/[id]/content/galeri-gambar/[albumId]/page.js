@@ -1,3 +1,4 @@
+import { canManageWebsite } from '@/lib/website-access'
 import { notFound, redirect } from 'next/navigation'
 import { getSession } from '@/lib/auth'
 import { getCurrentAdminAccess, hasAdminPermission } from '@/lib/admin-access'
@@ -22,7 +23,7 @@ export default async function GalleryAlbumPage({ params }) {
   )
   const website = websiteResult.rows[0]
   if (!website) notFound()
-  if (!hasAdminPermission(access, 'manage-all-websites') && website.user_id !== session.id) redirect('/admin/network')
+  if (!(await canManageWebsite(session, website.id, website.user_id))) redirect('/admin/network')
 
   const albumResult = await query(
     "SELECT id, title, album_date FROM gallery_albums WHERE id = $1 AND website_id = $2 AND type = 'image' LIMIT 1",

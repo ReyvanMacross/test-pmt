@@ -1,12 +1,15 @@
 'use server'
 
+
+import { canManageWebsite } from '@/lib/website-access'
 import { randomUUID } from 'node:crypto'
-import { mkdir, unlink, writeFile } from 'node:fs/promises'
+import { unlink } from 'node:fs/promises'
 import path from 'node:path'
 import { revalidatePath } from 'next/cache'
 import { getSession } from '@/lib/auth'
 import { getCurrentAdminAccess, hasAdminPermission } from '@/lib/admin-access'
 import pool, { query } from '@/lib/db'
+import { removePortalFile, uploadPortalFile } from '@/lib/storage'
 
 const MAX_COVER_SIZE = 5 * 1024 * 1024
 const ACCEPTED_IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif'])
@@ -17,7 +20,7 @@ async function authorize(websiteId) {
   if (!session || !access) throw new Error('Sesi berakhir. Silakan masuk kembali.')
   const result = await query('SELECT id, user_id, name FROM websites WHERE id = $1 AND deleted_at IS NULL LIMIT 1', [websiteId])
   const website = result.rows[0]
-  if (!website || (!hasAdminPermission(access, 'manage-all-websites') && website.user_id !== session.id)) {
+  if (!website || !(await canManageWebsite(session, website.id, website.user_id))) {
     throw new Error('Anda tidak memiliki izin mengelola inovasi website ini.')
   }
   return { session, website }
@@ -63,11 +66,8 @@ async function prepareCover(file, websiteId) {
   if (file.type === 'image/gif' && ['GIF87a', 'GIF89a'].includes(buffer.toString('ascii', 0, 6))) extension = '.gif'
   if (!extension) throw new Error('Isi berkas tidak sesuai dengan format gambar yang dipilih.')
   const filename = `${randomUUID()}${extension}`
-  const directory = path.join(process.cwd(), 'public', 'uploads', 'innovations', String(websiteId))
-  await mkdir(directory, { recursive: true })
-  const absolutePath = path.join(directory, filename)
-  await writeFile(absolutePath, buffer, { flag: 'wx' })
-  return { absolutePath, publicPath: `/uploads/innovations/${websiteId}/${filename}`, name: String(file.name || filename).slice(0, 255), type: file.type, size: file.size }
+  const uploaded = await uploadPortalFile({ file, objectPath: `websites/${websiteId}/innovations/${filename}` })
+  return { publicPath: uploaded.publicUrl, name: String(file.name || filename).slice(0, 255), type: file.type, size: file.size }
 }
 
 function revalidate(websiteId) {
@@ -103,7 +103,7 @@ export async function createInnovationAction(websiteId, formData) {
     revalidate(website.id)
     return { success: true, message: 'Inovasi berhasil diterbitkan.', innovation }
   } catch (error) {
-    if (cover?.absolutePath) await unlink(cover.absolutePath).catch(() => {})
+    if (cover?.publicPath) await removePortalFile(cover.publicPath).catch(() => {})
     console.error('Create innovation error:', error)
     return { error: error.message || 'Gagal membuat data inovasi.' }
   }
@@ -139,14 +139,18 @@ export async function updateInnovationAction(websiteId, innovationId, formData) 
       await client.query('COMMIT')
     } catch (error) { await client.query('ROLLBACK'); throw error } finally { client.release() }
     if (oldCoverPath) {
+      if (await removePortalFile(oldCoverPath).catch(() => false)) {
+        // Previous Supabase Storage object removed.
+      } else {
       const oldFile = path.resolve(process.cwd(), 'public', oldCoverPath.replace(/^\//, ''))
       const root = path.resolve(process.cwd(), 'public', 'uploads', 'innovations', String(website.id))
       if (oldFile.startsWith(`${root}${path.sep}`)) await unlink(oldFile).catch((error) => console.warn('Could not remove old innovation cover:', error.message))
+      }
     }
     revalidate(website.id)
     return { success: true, message: 'Perubahan inovasi berhasil disimpan.', innovation }
   } catch (error) {
-    if (cover?.absolutePath) await unlink(cover.absolutePath).catch(() => {})
+    if (cover?.publicPath) await removePortalFile(cover.publicPath).catch(() => {})
     console.error('Update innovation error:', error)
     return { error: error.message || 'Gagal memperbarui inovasi.' }
   }
@@ -166,9 +170,13 @@ export async function deleteInnovationAction(websiteId, innovationId) {
       await client.query('COMMIT')
     } catch (error) { await client.query('ROLLBACK'); throw error } finally { client.release() }
     if (deleted.cover_path) {
+      if (await removePortalFile(deleted.cover_path).catch(() => false)) {
+        // Supabase Storage object removed.
+      } else {
       const file = path.resolve(process.cwd(), 'public', deleted.cover_path.replace(/^\//, ''))
       const root = path.resolve(process.cwd(), 'public', 'uploads', 'innovations', String(website.id))
       if (file.startsWith(`${root}${path.sep}`)) await unlink(file).catch((error) => console.warn('Could not remove innovation cover:', error.message))
+      }
     }
     revalidate(website.id)
     return { success: true, message: 'Inovasi berhasil dihapus.' }

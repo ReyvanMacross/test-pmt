@@ -12,8 +12,6 @@ export default function EditProfileForm({ website, initialProfile = {} }) {
 
   // State form
   const [formData, setFormData] = useState({
-    bannerTitle: initialProfile.banner_title || '',
-    bannerDescription: initialProfile.banner_subtitle || '',
     statLuas: initialProfile.luas_wilayah || '',
     statRW: initialProfile.jumlah_rw || '',
     statRT: initialProfile.jumlah_rt || '',
@@ -149,8 +147,6 @@ export default function EditProfileForm({ website, initialProfile = {} }) {
 
   function handleReset() {
     setFormData({
-      bannerTitle: initialProfile.banner_title || '',
-      bannerDescription: initialProfile.banner_subtitle || '',
       statLuas: initialProfile.luas_wilayah || '',
       statRW: initialProfile.jumlah_rw || '',
       statRT: initialProfile.jumlah_rt || '',
@@ -249,47 +245,7 @@ export default function EditProfileForm({ website, initialProfile = {} }) {
         onSubmit={handleSubmit}
         className="border border-slate-200 rounded-2xl shadow-sm bg-white p-6 sm:p-8 space-y-8"
       >
-        {/* ── SECTION 1: Informasi Banner Header ──────────────────────────── */}
-        <section className="space-y-4">
-          <div className="border-b border-slate-100 pb-3">
-            <h2 className="text-base font-semibold text-slate-900">Informasi Banner Header</h2>
-            <p className="text-xs text-slate-500 mt-0.5">
-              Pengaturan judul dan deskripsi pembuka pada halaman profil instansi
-            </p>
-          </div>
-          <div className="space-y-4">
-            <div className="flex flex-col gap-1.5">
-              <label className="text-sm font-medium text-slate-700" htmlFor="bannerTitle">
-                Judul Banner
-              </label>
-              <input
-                className="w-full bg-white text-slate-900 placeholder:text-slate-400 border border-slate-300 rounded-xl px-3.5 py-2.5 text-sm focus:ring-2 focus:ring-blue-600 focus:border-transparent outline-none transition-all"
-                id="bannerTitle"
-                name="bannerTitle"
-                placeholder="Masukkan judul banner..."
-                type="text"
-                value={formData.bannerTitle}
-                onChange={handleInputChange}
-              />
-            </div>
-            <div className="flex flex-col gap-1.5">
-              <label className="text-sm font-medium text-slate-700" htmlFor="bannerDescription">
-                Deskripsi Singkat Banner
-              </label>
-              <textarea
-                className="w-full bg-white text-slate-900 placeholder:text-slate-400 border border-slate-300 rounded-xl px-3.5 py-2.5 text-sm focus:ring-2 focus:ring-blue-600 focus:border-transparent outline-none transition-all resize-y"
-                id="bannerDescription"
-                name="bannerDescription"
-                placeholder="Ringkasan singkat mengenai wilayah..."
-                rows={3}
-                value={formData.bannerDescription}
-                onChange={handleInputChange}
-              />
-            </div>
-          </div>
-        </section>
-
-        {/* ── SECTION 2: Statistik & Demografi Wilayah ─────────────────────── */}
+        {/* ── SECTION 1: Statistik & Demografi Wilayah ─────────────────────── */}
         <section className="space-y-4 pt-2">
           <div className="border-b border-slate-100 pb-3">
             <div className="flex items-center gap-2.5 flex-wrap">

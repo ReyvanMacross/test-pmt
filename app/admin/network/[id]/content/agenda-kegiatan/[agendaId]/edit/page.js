@@ -1,3 +1,4 @@
+import { canManageWebsite } from '@/lib/website-access'
 import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
 import { ArrowLeft } from 'lucide-react'
@@ -21,7 +22,7 @@ export default async function EditAgendaPage({ params }) {
   const websiteResult = await query('SELECT id, user_id, name, subdomain FROM websites WHERE id = $1 AND deleted_at IS NULL LIMIT 1', [id])
   const website = websiteResult.rows[0]
   if (!website) notFound()
-  if (!hasAdminPermission(access, 'manage-all-websites') && website.user_id !== session.id) redirect('/admin/network')
+  if (!(await canManageWebsite(session, website.id, website.user_id))) redirect('/admin/network')
   const agendaResult = await query('SELECT id, title, description, start_date, end_date, time_range, location, organizer FROM agendas WHERE id = $1 AND website_id = $2 LIMIT 1', [agendaId, website.id])
   const agenda = agendaResult.rows[0]
   if (!agenda) notFound()

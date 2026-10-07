@@ -3,16 +3,23 @@ import { redirect } from 'next/navigation'
 import { getSession } from '@/lib/auth'
 import { query } from '@/lib/db'
 import CreateWebsiteForm from './CreateWebsiteForm'
+import { getCurrentAdminAccess, hasAdminPermission } from '@/lib/admin-access'
 
 export const metadata = { title: 'Tambah Website Baru - Network Admin' }
 
 export default async function CreateWebsitePage() {
   const session = await getSession()
   if (!session) redirect('/login')
+  const access = await getCurrentAdminAccess()
+  if (!hasAdminPermission(access, 'manage-all-websites') && !hasAdminPermission(access, 'manage-assigned-website')) redirect('/admin/dashboard')
+  if ((access?.role || session.role) !== 'super-admin') redirect('/admin/network')
 
   // Ambil daftar template aktif dari PostgreSQL
   const res = await query('SELECT id, name, slug, description FROM templates WHERE is_active = true ORDER BY id ASC')
-  const templates = res.rows
+  const accountRole = access?.role || session.role
+  const allowedTemplate = { 'admin-dinas': 'dinas', 'admin-kecamatan': 'kecamatan', 'admin-kelurahan': 'kelurahan' }[accountRole]
+  const templates = accountRole === 'super-admin' ? res.rows : res.rows.filter((template) => template.slug === allowedTemplate)
+  if (!templates.length) redirect('/admin/network')
 
   return (
     <div style={{ maxWidth: '800px', margin: '0 auto' }}>
