@@ -8,8 +8,9 @@ import { canManageWebsite } from '@/lib/website-access'
 import { removePortalFile, uploadPortalFile } from '@/lib/storage'
 
 const COLORS = new Set(['teal', 'emerald', 'amber', 'blue', 'indigo', 'rose'])
-const IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif'])
-const IMAGE_EXTENSIONS = { 'image/jpeg': '.jpg', 'image/png': '.png', 'image/webp': '.webp', 'image/gif': '.gif' }
+const IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp'])
+const IMAGE_EXTENSIONS = { 'image/jpeg': '.jpg', 'image/png': '.png', 'image/webp': '.webp' }
+const MAX_IMAGE_SIZE = 2 * 1024 * 1024
 
 export async function saveHeroSlidesAction(websiteId, formData) {
   const uploadedFiles = []
@@ -44,8 +45,8 @@ export async function saveHeroSlidesAction(websiteId, formData) {
       }
       if (!COLORS.has(badgeColor)) return await reject(`Tema warna slide ${position} tidak valid.`)
       if (isActive && !headline) return await reject(`Judul wajib diisi agar Slide ${position} dapat ditampilkan.`)
-      if (hasUpload && (!IMAGE_TYPES.has(image.type) || image.size > 5 * 1024 * 1024)) {
-        return await reject(`Gambar Slide ${position} harus JPG, PNG, WebP, atau GIF maksimal 5 MB.`)
+      if (hasUpload && (!IMAGE_TYPES.has(image.type) || image.size > MAX_IMAGE_SIZE)) {
+        return await reject(`Gambar Slide ${position} harus JPG, PNG, atau WebP maksimal 2 MB.`)
       }
 
       const existingResult = await query('SELECT image_path, image_name FROM hero_slides WHERE website_id = $1 AND position = $2 LIMIT 1', [website.id, position])

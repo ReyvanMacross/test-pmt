@@ -41,3 +41,15 @@ body {
   font-size: 0.75rem;
   line-height: 1.125rem;
 }
+
+.public-portal {
+  overflow-x: clip;
+  font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+.public-portal img,
+.public-portal iframe,
+.public-portal video {
+  max-width: 100%;
+}

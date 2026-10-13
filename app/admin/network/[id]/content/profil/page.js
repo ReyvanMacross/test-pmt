@@ -53,9 +53,28 @@ export default async function EditProfilePage({ params }) {
     console.error('Error fetching wilayah_profiles:', err)
   }
 
+  let initialKelurahanList = []
+  let initialBoundaryDescriptions = {}
+  try {
+    const contentRes = await query(
+      `SELECT c.metadata FROM contents c
+       JOIN menu_items m ON m.id = c.menu_item_id
+       WHERE c.website_id = $1 AND m.slug = 'profil' LIMIT 1`,
+      [id]
+    )
+    const savedList = contentRes.rows[0]?.metadata?.kelurahan_list
+    if (Array.isArray(savedList)) initialKelurahanList = savedList
+    const savedBoundaryDescriptions = contentRes.rows[0]?.metadata?.boundary_descriptions
+    if (savedBoundaryDescriptions && typeof savedBoundaryDescriptions === 'object' && !Array.isArray(savedBoundaryDescriptions)) {
+      initialBoundaryDescriptions = savedBoundaryDescriptions
+    }
+  } catch (err) {
+    console.error('Error fetching daftar kelurahan profil:', err)
+  }
+
   return (
     <div className="w-full">
-      <EditProfileForm website={website} initialProfile={profile} />
+      <EditProfileForm website={website} initialProfile={profile} initialKelurahanList={initialKelurahanList} initialBoundaryDescriptions={initialBoundaryDescriptions} />
     </div>
   )
 }

@@ -5,7 +5,12 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { saveProfileContentAction } from './actions'
 
-export default function EditProfileForm({ website, initialProfile = {} }) {
+function parseList(value) {
+  if (Array.isArray(value)) return value
+  return String(value || '').split(/\r?\n/).map((item) => item.replace(/^\s*(?:[-*•\d.)]+\s*)/, '').trim()).filter(Boolean)
+}
+
+export default function EditProfileForm({ website, initialProfile = {}, initialKelurahanList = [], initialBoundaryDescriptions = {} }) {
   const router = useRouter()
   const fileInputRef = useRef(null)
   const formRef = useRef(null)
@@ -24,8 +29,10 @@ export default function EditProfileForm({ website, initialProfile = {} }) {
     batasBarat: initialProfile.batas_barat || '',
     mapEmbedUrl: initialProfile.maps_embed_url || '',
     visiKecamatan: initialProfile.visi || '',
-    misiKecamatan: initialProfile.misi || '',
   })
+  const [missionItems, setMissionItems] = useState(() => parseList(initialProfile.misi).length ? parseList(initialProfile.misi) : [''])
+  const [kelurahanList, setKelurahanList] = useState(() => initialKelurahanList.length ? initialKelurahanList : [{ nama: '', deskripsi: '' }])
+  const [boundaryDescriptions, setBoundaryDescriptions] = useState(() => initialBoundaryDescriptions || {})
 
   const [saving, setSaving] = useState(false)
   const [toast, setToast] = useState(null) // { type: 'success' | 'error', message: string }
@@ -39,6 +46,14 @@ export default function EditProfileForm({ website, initialProfile = {} }) {
   function handleInputChange(e) {
     const { name, value } = e.target
     setFormData((prev) => ({ ...prev, [name]: value }))
+  }
+
+  function updateMission(index, value) {
+    setMissionItems((items) => items.map((item, itemIndex) => itemIndex === index ? value : item))
+  }
+
+  function updateKelurahan(index, field, value) {
+    setKelurahanList((items) => items.map((item, itemIndex) => itemIndex === index ? { ...item, [field]: value } : item))
   }
 
   // ── Unduh Template Excel / CSV ──────────────────────────────────────────────
@@ -159,8 +174,11 @@ export default function EditProfileForm({ website, initialProfile = {} }) {
       batasBarat: initialProfile.batas_barat || '',
       mapEmbedUrl: initialProfile.maps_embed_url || '',
       visiKecamatan: initialProfile.visi || '',
-      misiKecamatan: initialProfile.misi || '',
     })
+    const savedMissions = parseList(initialProfile.misi)
+    setMissionItems(savedMissions.length ? savedMissions : [''])
+    setKelurahanList(initialKelurahanList.length ? initialKelurahanList : [{ nama: '', deskripsi: '' }])
+    setBoundaryDescriptions(initialBoundaryDescriptions || {})
     showToast('success', 'Formulir dikembalikan ke data tersimpan sebelumnya.')
   }
 
@@ -476,6 +494,18 @@ export default function EditProfileForm({ website, initialProfile = {} }) {
               />
             </div>
           </div>
+          <div className="space-y-4">
+            {[
+              ['Utara', 'Batas Utara'],
+              ['Selatan', 'Batas Selatan'],
+              ['Timur', 'Batas Timur'],
+              ['Barat', 'Batas Barat'],
+            ].map(([key, label]) => <label key={key} className="block space-y-1.5 text-sm font-medium text-slate-700">
+              Keterangan singkat {label.toLowerCase()}
+              <textarea className="min-h-20 w-full resize-y rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm font-normal text-slate-800 outline-none transition focus:border-blue-600 focus:ring-2 focus:ring-blue-100" maxLength={500} placeholder={`Jelaskan batas ${key.toLowerCase()} secara singkat (opsional)`} value={boundaryDescriptions[key] || ''} onChange={(event) => setBoundaryDescriptions((current) => ({ ...current, [key]: event.target.value }))}/>
+            </label>)}
+          </div>
+          <input type="hidden" name="boundaryDescriptions" value={JSON.stringify(boundaryDescriptions)}/>
           <div className="flex flex-col gap-1.5 pt-2">
             <label className="text-sm font-medium text-slate-700" htmlFor="mapEmbedUrl">
               URL Embed Google Maps
@@ -515,21 +545,19 @@ export default function EditProfileForm({ website, initialProfile = {} }) {
                 onChange={handleInputChange}
               />
             </div>
-            <div className="flex flex-col gap-1.5">
-              <label className="text-sm font-medium text-slate-700" htmlFor="misiKecamatan">
-                Misi
-              </label>
-              <textarea
-                className="w-full bg-white text-slate-900 placeholder:text-slate-400 border border-slate-300 rounded-xl px-3.5 py-2.5 text-sm focus:ring-2 focus:ring-blue-600 focus:border-transparent outline-none transition-all resize-y"
-                id="misiKecamatan"
-                name="misiKecamatan"
-                placeholder="Tuliskan poin-poin misi per baris..."
-                rows={4}
-                value={formData.misiKecamatan}
-                onChange={handleInputChange}
-              />
+            <div className="space-y-3">
+              <div className="flex flex-wrap items-center justify-between gap-2"><div><h3 className="text-sm font-semibold text-slate-700">Daftar Misi</h3><p className="mt-0.5 text-xs text-slate-500">Tambahkan satu poin misi per baris. Nomor dibuat otomatis.</p></div><button type="button" onClick={() => setMissionItems((items) => [...items, ''])} className="rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-xs font-semibold text-blue-700 hover:bg-blue-100">+ Tambah Misi</button></div>
+              {missionItems.map((item, index) => <div key={index} className="flex items-start gap-3 rounded-xl border border-slate-200 bg-slate-50/60 p-3"><span className="mt-2 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-teal-50 text-xs font-bold text-teal-700">{index + 1}</span><textarea className="min-h-16 w-full resize-y rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-600" aria-label={`Isi misi ${index + 1}`} placeholder={`Tuliskan misi ${index + 1}...`} value={item} onChange={(e) => updateMission(index, e.target.value)}/><button type="button" aria-label={`Hapus misi ${index + 1}`} onClick={() => setMissionItems((items) => items.length > 1 ? items.filter((_, itemIndex) => itemIndex !== index) : [''])} className="rounded-lg px-2 py-2 text-sm font-bold text-rose-600 hover:bg-rose-50">Hapus</button></div>)}
+              <input type="hidden" name="misiKecamatan" value={missionItems.map((item) => item.trim()).filter(Boolean).join('\n')}/>
             </div>
           </div>
+        </section>
+
+        {/* ── SECTION 5: Daftar Kelurahan ───────────────────────────────── */}
+        <section className="space-y-4 pt-2">
+          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-3"><div><h2 className="text-base font-semibold text-slate-900">Daftar Kelurahan</h2><p className="mt-0.5 text-xs text-slate-500">Kelola nama dan ringkasan kelurahan di wilayah kecamatan ini.</p></div><button type="button" onClick={() => setKelurahanList((items) => [...items, { nama: '', deskripsi: '' }])} className="rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-xs font-semibold text-blue-700 hover:bg-blue-100">+ Tambah Kelurahan</button></div>
+          {kelurahanList.map((item, index) => <div key={index} className="grid gap-3 rounded-xl border border-slate-200 bg-slate-50/60 p-4 md:grid-cols-[auto_1fr_2fr_auto] md:items-start"><span className="mt-2 flex h-7 w-7 items-center justify-center rounded-lg bg-teal-50 text-xs font-bold text-teal-700">{String(index + 1).padStart(2, '0')}</span><label className="space-y-1 text-xs font-semibold text-slate-600">Nama Kelurahan<input className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-normal text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-600" placeholder="Contoh: Kebon Lega" value={item.nama || ''} onChange={(e) => updateKelurahan(index, 'nama', e.target.value)}/></label><label className="space-y-1 text-xs font-semibold text-slate-600">Keterangan singkat<input className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-normal text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-600" placeholder="Ringkasan wilayah (opsional)" value={item.deskripsi || ''} onChange={(e) => updateKelurahan(index, 'deskripsi', e.target.value)}/></label><button type="button" aria-label={`Hapus Kelurahan ${index + 1}`} onClick={() => setKelurahanList((items) => items.length > 1 ? items.filter((_, itemIndex) => itemIndex !== index) : [{ nama: '', deskripsi: '' }])} className="rounded-lg px-2 py-2 text-sm font-semibold text-rose-600 hover:bg-rose-50">Hapus</button></div>)}
+          <input type="hidden" name="kelurahanList" value={JSON.stringify(kelurahanList.map(({ nama = '', deskripsi = '' }) => ({ nama: nama.trim(), deskripsi: deskripsi.trim() })).filter((item) => item.nama))}/>
         </section>
 
         {/* ── BOTTOM ACTIONS ──────────────────────────────────────────────── */}

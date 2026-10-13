@@ -9,6 +9,7 @@ import { query } from '@/lib/db'
 import { getSession } from '@/lib/auth'
 import { CONTENT_MODULES } from '@/lib/content-modules'
 import { removePortalFile, uploadPortalFile } from '@/lib/storage'
+import { PNS_RANK_OPTIONS } from '@/lib/pns-ranks'
 
 // ─── Helper Otorisasi Website ─────────────────────────────────────────────────
 async function authorizeWebsite(websiteId, session) {
@@ -20,6 +21,34 @@ async function authorizeWebsite(websiteId, session) {
     throw new Error('Anda tidak memiliki izin mengelola konten website ini.')
   }
   return true
+}
+
+export async function setWebsiteModuleVisibilityAction(websiteId, moduleSlug, isEnabled) {
+  try {
+    const session = await getSession()
+    if (!session) return { error: 'Sesi berakhir. Silakan masuk kembali.' }
+    if (typeof isEnabled !== 'boolean') return { error: 'Status modul tidak valid.' }
+    if (!CONTENT_MODULES.some((module) => module.slug === moduleSlug)) {
+      return { error: 'Modul yang dipilih tidak dikenali.' }
+    }
+    await authorizeWebsite(websiteId, session)
+
+    await query(
+      `INSERT INTO website_module_settings (website_id, module_slug, is_enabled, created_at, updated_at)
+       VALUES ($1, $2, $3, NOW(), NOW())
+       ON CONFLICT (website_id, module_slug)
+       DO UPDATE SET is_enabled = EXCLUDED.is_enabled, updated_at = NOW()`,
+      [websiteId, moduleSlug, isEnabled]
+    )
+
+    const websiteResult = await query('SELECT subdomain FROM websites WHERE id = $1 LIMIT 1', [websiteId])
+    revalidatePath(`/admin/network/${websiteId}/content`)
+    if (websiteResult.rows[0]?.subdomain) revalidatePath(`/${websiteResult.rows[0].subdomain}`)
+    return { success: true, isEnabled }
+  } catch (error) {
+    console.error('Error updating website module visibility:', error)
+    return { error: error.message || 'Pengaturan modul gagal disimpan.' }
+  }
 }
 
 // ─── Helper Dapatkan atau Buat menu_item_id ────────────────────────────────────
@@ -53,6 +82,15 @@ export async function saveModuleContentAction(websiteId, moduleSlug, formData) {
 
     const title = formData.get('title')?.trim() || null
     const body = formData.get('body')?.trim() || null
+    const pangkatGolongan = moduleSlug === 'profil-pimpinan'
+      ? String(formData.get('pangkat_golongan') || '').trim()
+      : null
+    const sambutanQuote = moduleSlug === 'profil-pimpinan'
+      ? String(formData.get('sambutan_quote') || '').trim().slice(0, 5000)
+      : null
+    if (moduleSlug === 'profil-pimpinan' && pangkatGolongan && !PNS_RANK_OPTIONS.some(([value]) => value === pangkatGolongan)) {
+      return { error: 'Pangkat atau golongan PNS yang dipilih tidak valid.' }
+    }
     const removeFile = formData.get('remove_file') === 'true'
     const file = formData.get('file')
 
@@ -68,10 +106,42 @@ export async function saveModuleContentAction(websiteId, moduleSlug, formData) {
     let newFiles = '[]'
     const menuItemId = await getOrCreateMenuItemId(moduleSlug)
     const currentResult = await query(
-      'SELECT images, files FROM contents WHERE website_id = $1 AND menu_item_id = $2 LIMIT 1',
+      'SELECT images, files, metadata FROM contents WHERE website_id = $1 AND menu_item_id = $2 LIMIT 1',
       [websiteId, menuItemId]
     )
     const currentContent = currentResult.rows[0]
+    const metadata = currentContent?.metadata && typeof currentContent.metadata === 'object' && !Array.isArray(currentContent.metadata)
+      ? { ...currentContent.metadata }
+      : {}
+    if (moduleSlug === 'profil-pimpinan') {
+      metadata.pangkat_golongan = pangkatGolongan || null
+      metadata.sambutan_quote = sambutanQuote || null
+    }
+    if (moduleSlug === 'struktur-organisasi') {
+      const organizationMode = String(formData.get('organization_mode') || 'image')
+      if (!['image', 'builder'].includes(organizationMode)) {
+        return { error: 'Mode struktur organisasi tidak valid.' }
+      }
+      let organizationChart
+      try {
+        organizationChart = JSON.parse(String(formData.get('organization_chart') || '[]'))
+      } catch {
+        return { error: 'Data bagan organisasi tidak terbaca.' }
+      }
+      if (!Array.isArray(organizationChart) || organizationChart.length > 100) {
+        return { error: 'Bagan organisasi tidak valid atau melebihi 100 jabatan.' }
+      }
+      organizationChart = organizationChart.map((row) => ({
+        jabatan: String(row?.jabatan || '').trim().slice(0, 160),
+        nama: String(row?.nama || '').trim().slice(0, 160),
+        level: Math.min(4, Math.max(1, Number(row?.level) || 1)),
+      })).filter((row) => row.jabatan)
+      if (organizationMode === 'builder' && organizationChart.length === 0) {
+        return { error: 'Tambahkan setidaknya satu jabatan pada bagan organisasi.' }
+      }
+      metadata.organization_mode = organizationMode
+      metadata.organization_chart = organizationChart
+    }
 
     if (hasUpload) {
       if (file.size > 5 * 1024 * 1024) {
@@ -109,16 +179,17 @@ export async function saveModuleContentAction(websiteId, moduleSlug, formData) {
 
     // Upsert konten modul
     await query(
-      `INSERT INTO contents (website_id, menu_item_id, title, body, images, files, updated_at)
-       VALUES ($1, $2, $3, $4, $5::jsonb, $6::jsonb, NOW())
+      `INSERT INTO contents (website_id, menu_item_id, title, body, images, files, metadata, updated_at)
+       VALUES ($1, $2, $3, $4, $5::jsonb, $6::jsonb, $7::jsonb, NOW())
        ON CONFLICT (website_id, menu_item_id)
        DO UPDATE SET
          title = EXCLUDED.title,
          body = EXCLUDED.body,
-         images = CASE WHEN $7::boolean = true THEN EXCLUDED.images ELSE contents.images END,
-         files = CASE WHEN $7::boolean = true THEN EXCLUDED.files ELSE contents.files END,
+         images = CASE WHEN $8::boolean = true THEN EXCLUDED.images ELSE contents.images END,
+         files = CASE WHEN $8::boolean = true THEN EXCLUDED.files ELSE contents.files END,
+         metadata = EXCLUDED.metadata,
          updated_at = NOW()`,
-      [websiteId, menuItemId, title, body, newImages, newFiles, hasFileChange]
+      [websiteId, menuItemId, title, body, newImages, newFiles, JSON.stringify(metadata), hasFileChange]
     )
 
     if (hasFileChange && currentContent) {

@@ -55,6 +55,29 @@ export async function saveProfileContentAction(websiteId, formData) {
 
     const visi = formData.get('visiKecamatan')?.trim() || null
     const misi = formData.get('misiKecamatan')?.trim() || null
+    let kelurahanList
+    try {
+      kelurahanList = JSON.parse(String(formData.get('kelurahanList') || '[]'))
+    } catch {
+      return { error: 'Daftar kelurahan tidak terbaca. Periksa kembali isian.' }
+    }
+    if (!Array.isArray(kelurahanList) || kelurahanList.length > 100) {
+      return { error: 'Daftar kelurahan tidak valid atau melebihi batas 100 data.' }
+    }
+    kelurahanList = kelurahanList.map((item) => ({
+      nama: String(item?.nama || '').trim().slice(0, 120),
+      deskripsi: String(item?.deskripsi || '').trim().slice(0, 500),
+    })).filter((item) => item.nama)
+    let boundaryDescriptions
+    try {
+      boundaryDescriptions = JSON.parse(String(formData.get('boundaryDescriptions') || '{}'))
+    } catch {
+      return { error: 'Keterangan batas wilayah tidak terbaca. Periksa kembali isian.' }
+    }
+    if (!boundaryDescriptions || typeof boundaryDescriptions !== 'object' || Array.isArray(boundaryDescriptions)) {
+      return { error: 'Keterangan batas wilayah tidak valid.' }
+    }
+    boundaryDescriptions = Object.fromEntries(['Utara', 'Selatan', 'Timur', 'Barat'].map((direction) => [direction, String(boundaryDescriptions[direction] || '').trim().slice(0, 500)]))
 
     // 1. Upsert data ke wilayah_profiles
     await query(
@@ -111,29 +134,37 @@ export async function saveProfileContentAction(websiteId, formData) {
       ]
     )
 
-    // 2. Sinkronkan ke tabel contents untuk modul 'profil' agar status keterisian sinkron
-    try {
-      const menuItemId = await getOrCreateProfileMenuItemId()
-      const profileHasData = Boolean(visi || misi || luas_wilayah || jumlah_rw || jumlah_rt || total_jiwa || jumlah_kk || kepuasan_warga || batas_utara || batas_selatan || batas_timur || batas_barat || maps_embed_url)
-      const contentTitle = profileHasData ? 'Profil Wilayah' : null
-      const contentBody = [visi && `Visi: ${visi}`, misi && `Misi: ${misi}`].filter(Boolean).join('\n\n') || null
+    // 2. Simpan daftar kelurahan di metadata modul Profil, tanpa mengganggu
+    // metadata profil lain yang mungkin sudah tersimpan.
+    const menuItemId = await getOrCreateProfileMenuItemId()
+    const currentContent = await query(
+      'SELECT metadata FROM contents WHERE website_id = $1 AND menu_item_id = $2 LIMIT 1',
+      [websiteId, menuItemId]
+    )
+    const metadata = currentContent.rows[0]?.metadata && typeof currentContent.rows[0].metadata === 'object' && !Array.isArray(currentContent.rows[0].metadata)
+      ? { ...currentContent.rows[0].metadata }
+      : {}
+    metadata.kelurahan_list = kelurahanList
+    metadata.boundary_descriptions = boundaryDescriptions
+    const profileHasData = Boolean(visi || misi || luas_wilayah || jumlah_rw || jumlah_rt || total_jiwa || jumlah_kk || kepuasan_warga || batas_utara || batas_selatan || batas_timur || batas_barat || maps_embed_url || kelurahanList.length || Object.values(boundaryDescriptions).some(Boolean))
+    const contentTitle = profileHasData ? 'Profil Wilayah' : null
+    // Visi/Misi disimpan hanya di wilayah_profiles, bukan sebagai deskripsi isi modul.
+    const contentBody = null
 
-      await query(
-        `INSERT INTO contents (website_id, menu_item_id, title, body, updated_at)
-         VALUES ($1, $2, $3, $4, NOW())
-         ON CONFLICT (website_id, menu_item_id)
-         DO UPDATE SET
-           title = EXCLUDED.title,
-           body = EXCLUDED.body,
-           updated_at = NOW()`,
-        [websiteId, menuItemId, contentTitle, contentBody]
-      )
-    } catch (syncErr) {
-      console.error('Warning: Error syncing to contents table:', syncErr)
-    }
+    await query(
+      `INSERT INTO contents (website_id, menu_item_id, title, body, metadata, updated_at)
+       VALUES ($1, $2, $3, $4, $5::jsonb, NOW())
+       ON CONFLICT (website_id, menu_item_id)
+       DO UPDATE SET
+         title = EXCLUDED.title,
+         body = EXCLUDED.body,
+         metadata = EXCLUDED.metadata,
+         updated_at = NOW()`,
+      [websiteId, menuItemId, contentTitle, contentBody, JSON.stringify(metadata)]
+    )
 
     // 3. Catat ke activity_logs
-    const wsRes = await query('SELECT name FROM websites WHERE id = $1 LIMIT 1', [websiteId])
+    const wsRes = await query('SELECT name, subdomain FROM websites WHERE id = $1 LIMIT 1', [websiteId])
     const websiteName = wsRes.rows[0]?.name || 'Website'
 
     await query(
@@ -150,6 +181,10 @@ export async function saveProfileContentAction(websiteId, formData) {
     revalidatePath(`/admin/network/${websiteId}/content`)
     revalidatePath(`/admin/network/${websiteId}/content/profil`)
     revalidatePath('/admin/dashboard')
+    if (wsRes.rows[0]?.subdomain) {
+      revalidatePath(`/${wsRes.rows[0].subdomain}`)
+      revalidatePath(`/${wsRes.rows[0].subdomain}/profil`)
+    }
 
     return { success: true, message: 'Perubahan profil berhasil disimpan.' }
   } catch (err) {

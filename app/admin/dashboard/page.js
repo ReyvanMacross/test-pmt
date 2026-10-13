@@ -92,6 +92,7 @@ export default async function DashboardPage() {
     let filled = new Set()
     let activities = []
     let canViewAllLogs = false
+    let moduleVisibility = Object.fromEntries(CONTENT_MODULES.map((module) => [module.slug, true]))
 
     try {
       const access = await getCurrentAdminAccess()
@@ -116,6 +117,18 @@ export default async function DashboardPage() {
       website = result.rows[0] || null
 
       if (website) {
+        try {
+          const visibilityRows = await query(
+            'SELECT module_slug, is_enabled FROM website_module_settings WHERE website_id = $1',
+            [website.id]
+          )
+          visibilityRows.rows.forEach((row) => {
+            if (Object.hasOwn(moduleVisibility, row.module_slug)) moduleVisibility[row.module_slug] = row.is_enabled !== false
+          })
+        } catch (error) {
+          console.error('Role dashboard module visibility error:', error.message)
+        }
+
         const [contentRows, contactRows, customCounts] = await Promise.all([
           query(`SELECT m.slug, c.title, c.body, c.images, c.files
                  FROM contents c JOIN menu_items m ON m.id = c.menu_item_id WHERE c.website_id = $1`, [website.id]),
@@ -152,7 +165,9 @@ export default async function DashboardPage() {
       console.error('Role dashboard data error:', error)
     }
 
-    return <RoleDashboard user={user} website={website} filledModules={filled.size} totalModules={CONTENT_MODULES.length} activities={activities} canViewAllLogs={canViewAllLogs} />
+    const visibleModuleSlugs = new Set(CONTENT_MODULES.filter((module) => moduleVisibility[module.slug]).map((module) => module.slug))
+    const visibleFilledCount = [...filled].filter((slug) => visibleModuleSlugs.has(slug)).length
+    return <RoleDashboard user={user} website={website} filledModules={visibleFilledCount} totalModules={visibleModuleSlugs.size} activities={activities} canViewAllLogs={canViewAllLogs} />
   }
 
   // 1. Ambil data user terkini dari database

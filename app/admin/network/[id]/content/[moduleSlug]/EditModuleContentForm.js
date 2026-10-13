@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { saveModuleContentAction } from '../actions'
+import { PNS_RANK_OPTIONS } from '@/lib/pns-ranks'
 
 function formatBytes(bytes, decimals = 1) {
   if (!bytes || bytes === 0) return '0 B'
@@ -151,6 +152,10 @@ export default function EditModuleContentForm({ website, moduleMeta, initialCont
     null
 
   const [title, setTitle] = useState(initialTitle)
+  const [pangkatGolongan, setPangkatGolongan] = useState(initialContent.metadata?.pangkat_golongan || '')
+  const [leadershipQuote, setLeadershipQuote] = useState(initialContent.metadata?.sambutan_quote || '')
+  const [organizationMode, setOrganizationMode] = useState(initialContent.metadata?.organization_mode === 'builder' ? 'builder' : 'image')
+  const [organizationRows, setOrganizationRows] = useState(() => Array.isArray(initialContent.metadata?.organization_chart) ? initialContent.metadata.organization_chart : [])
   const [bodyHtml, setBodyHtml] = useState(initialBody)
   const [selectedFile, setSelectedFile] = useState(null)
   const [filePreview, setFilePreview] = useState(existingAttachment?.url || null)
@@ -251,6 +256,10 @@ export default function EditModuleContentForm({ website, moduleMeta, initialCont
 
   function handleReset() {
     setTitle(initialTitle)
+    setPangkatGolongan(initialContent.metadata?.pangkat_golongan || '')
+    setLeadershipQuote(initialContent.metadata?.sambutan_quote || '')
+    setOrganizationMode(initialContent.metadata?.organization_mode === 'builder' ? 'builder' : 'image')
+    setOrganizationRows(Array.isArray(initialContent.metadata?.organization_chart) ? initialContent.metadata.organization_chart : [])
     setBodyHtml(initialBody)
     if (editorRef.current) {
       editorRef.current.innerHTML = initialBody
@@ -271,6 +280,22 @@ export default function EditModuleContentForm({ website, moduleMeta, initialCont
     try {
       const fd = new FormData()
       fd.set('title', title)
+      if (moduleMeta.slug === 'profil-pimpinan') fd.set('pangkat_golongan', pangkatGolongan)
+      if (moduleMeta.slug === 'profil-pimpinan') fd.set('sambutan_quote', leadershipQuote)
+      if (moduleMeta.slug === 'struktur-organisasi') {
+        const rows = organizationRows.map((row) => ({
+          jabatan: String(row.jabatan || '').trim(),
+          nama: String(row.nama || '').trim(),
+          level: Math.min(4, Math.max(1, Number(row.level) || 1)),
+        })).filter((row) => row.jabatan)
+        if (organizationMode === 'builder' && !rows.length) {
+          showToast('error', 'Tambahkan setidaknya satu jabatan pada bagan organisasi.')
+          setSaving(false)
+          return
+        }
+        fd.set('organization_mode', organizationMode)
+        fd.set('organization_chart', JSON.stringify(rows))
+      }
       const currentHtml = editorRef.current ? editorRef.current.innerHTML : bodyHtml
       fd.set('body', currentHtml)
 
@@ -404,23 +429,52 @@ export default function EditModuleContentForm({ website, moduleMeta, initialCont
 
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* 1. Judul Konten */}
-          <div>
-            <label className="text-sm font-semibold text-slate-700 block mb-2" htmlFor="judul_konten">
-              Judul Konten
-            </label>
-            <input
-              className="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-blue-600 bg-white placeholder:text-slate-400 transition shadow-xs"
-              id="judul_konten"
-              name="judul_konten"
-              placeholder="Masukkan judul konten..."
-              type="text"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-            />
+          <div className={moduleMeta.slug === 'profil-pimpinan' ? 'grid grid-cols-1 gap-4 md:grid-cols-2' : ''}>
+            <div>
+              <label className="text-sm font-semibold text-slate-700 block mb-2" htmlFor="judul_konten">
+                {moduleMeta.slug === 'profil-pimpinan' ? 'Judul Konten / Nama Pimpinan' : 'Judul Konten'}
+              </label>
+              <input
+                className="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-blue-600 bg-white placeholder:text-slate-400 transition shadow-xs"
+                id="judul_konten"
+                name="judul_konten"
+                placeholder={moduleMeta.slug === 'profil-pimpinan' ? 'Masukkan nama dan gelar pimpinan...' : 'Masukkan judul konten...'}
+                type="text"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+              />
+            </div>
+            {moduleMeta.slug === 'profil-pimpinan' && <div>
+              <label className="text-sm font-semibold text-slate-700 block mb-2" htmlFor="pangkat_golongan">
+                Pangkat / Golongan PNS
+              </label>
+              <select
+                className="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-blue-600 bg-white transition shadow-xs"
+                id="pangkat_golongan"
+                name="pangkat_golongan"
+                value={pangkatGolongan}
+                onChange={(e) => setPangkatGolongan(e.target.value)}
+              >
+                <option value="">Pilih Pangkat / Golongan...</option>
+                {PNS_RANK_OPTIONS.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+              </select>
+            </div>}
           </div>
 
+          {moduleMeta.slug === 'struktur-organisasi' && <section className="space-y-4 rounded-xl border border-slate-200 bg-slate-50/70 p-4 sm:p-5">
+            <div><h3 className="text-sm font-bold text-slate-800">Tampilan Struktur Organisasi</h3><p className="mt-1 text-xs text-slate-500">Pilih unggah bagan yang sudah jadi atau susun bagan dari daftar jabatan.</p></div>
+            <div className="grid gap-3 sm:grid-cols-2">
+              {[['image', 'Unggah gambar bagan', 'Pakai gambar struktur organisasi yang sudah tersedia.'], ['builder', 'Susun dengan editor', 'Tambah jabatan baris demi baris dan tentukan tingkatnya.']].map(([value, label, hint]) => <label key={value} className={`flex cursor-pointer gap-3 rounded-xl border p-4 transition ${organizationMode === value ? 'border-blue-400 bg-blue-50 ring-1 ring-blue-200' : 'border-slate-200 bg-white hover:border-slate-300'}`}><input type="radio" name="organizationModeChoice" value={value} checked={organizationMode === value} onChange={() => { setOrganizationMode(value); if (value === 'builder' && !organizationRows.length) setOrganizationRows([{ jabatan: '', nama: '', level: 1 }]) }} className="mt-1 accent-blue-600"/><span><span className="block text-sm font-semibold text-slate-800">{label}</span><span className="mt-1 block text-xs leading-relaxed text-slate-500">{hint}</span></span></label>)}
+            </div>
+            {organizationMode === 'builder' && <div className="space-y-3">
+              <div className="flex flex-wrap items-center justify-between gap-2"><p className="text-xs text-slate-600">Setiap baris menjadi satu kotak jabatan. Tingkat mengatur urutan hierarki dari atas.</p><button type="button" onClick={() => setOrganizationRows((rows) => [...rows, { jabatan: '', nama: '', level: 1 }])} className="rounded-lg border border-blue-200 bg-white px-3 py-2 text-xs font-semibold text-blue-700 hover:bg-blue-50">+ Tambah Jabatan</button></div>
+              {(organizationRows.length ? organizationRows : [{ jabatan: '', nama: '', level: 1 }]).map((row, index) => <div key={index} className="grid gap-3 rounded-xl border border-slate-200 bg-white p-3 sm:grid-cols-[auto_1.4fr_1fr_150px_auto] sm:items-end"><span className="flex h-8 w-8 items-center justify-center rounded-lg bg-teal-50 text-xs font-bold text-teal-700">{String(index + 1).padStart(2, '0')}</span><label className="text-xs font-semibold text-slate-600">Jabatan<input className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm font-normal text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-600" placeholder="Contoh: Camat" value={row.jabatan || ''} onChange={(e) => setOrganizationRows((rows) => rows.map((entry, itemIndex) => itemIndex === index ? { ...entry, jabatan: e.target.value } : entry))}/></label><label className="text-xs font-semibold text-slate-600">Nama pejabat (opsional)<input className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm font-normal text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-600" placeholder="Nama pejabat" value={row.nama || ''} onChange={(e) => setOrganizationRows((rows) => rows.map((entry, itemIndex) => itemIndex === index ? { ...entry, nama: e.target.value } : entry))}/></label><label className="text-xs font-semibold text-slate-600">Tingkat bagan<select className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-normal text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-600" value={row.level || 1} onChange={(e) => setOrganizationRows((rows) => rows.map((entry, itemIndex) => itemIndex === index ? { ...entry, level: Number(e.target.value) } : entry))}>{[1,2,3,4].map((level) => <option key={level} value={level}>Tingkat {level}</option>)}</select></label><button type="button" onClick={() => setOrganizationRows((rows) => rows.length > 1 ? rows.filter((_, itemIndex) => itemIndex !== index) : [{ jabatan: '', nama: '', level: 1 }])} className="rounded-lg px-2 py-2 text-xs font-semibold text-rose-600 hover:bg-rose-50">Hapus</button></div>)}
+              <div className="rounded-xl border border-dashed border-slate-300 bg-white p-4"><p className="mb-3 text-xs font-bold uppercase tracking-wide text-slate-500">Pratinjau Susunan</p><div className="space-y-3">{[1,2,3,4].map((level) => { const rows = organizationRows.filter((row) => Number(row.level || 1) === level && row.jabatan?.trim()); return rows.length ? <div key={level} className="flex flex-wrap justify-center gap-2">{rows.map((row, index) => <div key={`${row.jabatan}-${index}`} className="min-w-36 rounded-lg border border-teal-200 bg-teal-50 px-4 py-2 text-center"><span className="block text-xs font-bold text-slate-800">{row.jabatan}</span>{row.nama && <span className="mt-1 block text-[11px] text-slate-600">{row.nama}</span>}</div>)}</div> : null })}</div></div>
+            </div>}
+          </section>}
+
           {/* 2. Upload Berkas / Gambar Dropzone */}
-          <div className="space-y-2">
+          {(moduleMeta.slug !== 'struktur-organisasi' || organizationMode === 'image') && <div className="space-y-2">
             <label className="text-sm font-semibold text-slate-700 block">
               {moduleConfig.uploadLabel}
             </label>
@@ -512,12 +566,18 @@ export default function EditModuleContentForm({ website, moduleMeta, initialCont
                 </div>
               </div>
             )}
-          </div>
+          </div>}
+
+          {moduleMeta.slug === 'profil-pimpinan' && <div className="space-y-2">
+            <label className="block text-sm font-semibold text-slate-700" htmlFor="leadershipQuote">Kutipan Sambutan Pimpinan</label>
+            <textarea id="leadershipQuote" value={leadershipQuote} onChange={(event) => setLeadershipQuote(event.target.value)} maxLength={5000} rows={4} placeholder="Tuliskan kutipan utama sambutan pimpinan..." className="w-full resize-y rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm leading-6 text-slate-800 outline-none focus:ring-2 focus:ring-blue-600"/>
+            <p className="text-xs text-slate-500">Kutipan ini ditampilkan terpisah di atas deskripsi sambutan.</p>
+          </div>}
 
           {/* 3. Isi Konten dengan Toolbar */}
           <div className="space-y-2">
             <label className="text-sm font-semibold text-slate-700 block" htmlFor="editorArea">
-              Isi Konten
+              {moduleMeta.slug === 'profil-pimpinan' ? 'Deskripsi Sambutan Pimpinan' : 'Isi Konten'}
             </label>
             <div className="border border-slate-200 rounded-xl overflow-hidden bg-white shadow-xs focus-within:ring-2 focus-within:ring-blue-600">
               {/* Rich Editor Toolbar */}

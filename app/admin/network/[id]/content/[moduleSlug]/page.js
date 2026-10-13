@@ -58,10 +58,10 @@ export default async function EditModuleContentPage({ params }) {
   }
 
   // 3. Ambil konten tersimpan dari tabel contents
-  let initialContent = { title: '', body: '', images: [], files: [] }
+  let initialContent = { title: '', body: '', images: [], files: [], metadata: {} }
   try {
     const contentRes = await query(
-      `SELECT c.title, c.body, c.images, c.files
+      `SELECT c.title, c.body, c.images, c.files, c.metadata
        FROM contents c
        JOIN menu_items m ON c.menu_item_id = m.id
        WHERE c.website_id = $1 AND m.slug = $2
@@ -75,6 +75,7 @@ export default async function EditModuleContentPage({ params }) {
         body: contentRes.rows[0].body || '',
         images: Array.isArray(contentRes.rows[0].images) ? contentRes.rows[0].images : [],
         files: Array.isArray(contentRes.rows[0].files) ? contentRes.rows[0].files : [],
+        metadata: contentRes.rows[0].metadata && typeof contentRes.rows[0].metadata === 'object' ? contentRes.rows[0].metadata : {},
       }
     }
   } catch (err) {

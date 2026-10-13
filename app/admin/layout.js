@@ -60,8 +60,8 @@ export default async function AdminLayout({ children }) {
   const roleLabel = roleNames[userRole] ?? 'Administrator'
 
   return (
-    <div className={`${jakarta.className} bg-slate-50 text-slate-800 antialiased min-h-screen flex flex-col`}>
-      <div className="flex h-screen overflow-hidden">
+    <div className={`${jakarta.className} fixed inset-0 bg-slate-50 text-slate-800 antialiased overflow-hidden`}>
+      <div className="flex h-full min-h-0 overflow-hidden">
         {/* ── Sidebar ────────────────────────────────────────────────────── */}
           <Sidebar userRole={userRole} permissions={user.permissions || []} />
 
@@ -90,7 +90,7 @@ export default async function AdminLayout({ children }) {
             </div>
           </header>
 
-          {/* Only the active admin page owns scrolling. Hero Slider uses its own bounded scroll area. */}
+          {/* The main panel is the only admin page scroll container. */}
           <AdminMain>{children}</AdminMain>
         </div>
       </div>

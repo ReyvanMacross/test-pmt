@@ -1,42 +1,70 @@
 import Link from 'next/link'
-import { MapPin, Phone, Share2 } from 'lucide-react'
+import { Mail, MapPin } from 'lucide-react'
 import MobilePortalMenu from './MobilePortalMenu'
+import DesktopPortalNav from './DesktopPortalNav'
 
-export function PortalHeader({ website }) {
+export function PortalHeader({ website, moduleVisibility = {} }) {
   const base = `/${website.subdomain}`
+  const isEnabled = (slug) => moduleVisibility[slug] !== false
   const links = [
-    ['Layanan Publik', `${base}/layanan`],
-    ['Profil Wilayah', `${base}/profil`],
-    ['Kabar Berita', `${base}/berita`],
-    ['Dokumen Resmi', `${base}/ppid`],
-    ['Kontak', `${base}/kontak`],
-  ]
+    { label: 'Layanan Publik', href: `${base}/layanan`, enabled: isEnabled('layanan') },
+    { label: 'Profil Wilayah', href: `${base}/profil`, enabled: isEnabled('profil') },
+    { label: 'Kabar Berita', href: `${base}/berita`, enabled: isEnabled('berita') },
+    { label: 'Agenda Kegiatan', href: `${base}/agenda-kegiatan`, enabled: isEnabled('agenda-kegiatan') },
+    { label: 'Program dan Kegiatan', href: `${base}/program-dan-kegiatan`, enabled: isEnabled('program-dan-kegiatan') },
+    { label: 'Inovasi Wilayah', href: `${base}/inovasi`, enabled: isEnabled('inovasi') },
+    { label: 'Dokumen Resmi', href: `${base}/ppid`, enabled: isEnabled('ppid') },
+    { label: 'Kontak', href: `${base}/kontak`, enabled: isEnabled('kontak') },
+  ].filter((item) => item.enabled)
+  const quickLinks = links.filter((item) => ['Beranda', 'Layanan Publik', 'Profil Wilayah', 'Kabar Berita', 'Dokumen Resmi', 'Kontak'].includes(item.label))
+  const infoLinks = links.filter((item) => ['Kabar Berita', 'Agenda Kegiatan', 'Program dan Kegiatan', 'Inovasi Wilayah'].includes(item.label))
+  const mobileLinks = [{ label: 'Beranda', href: base }, ...quickLinks.filter((item) => !['Beranda', 'Kabar Berita'].includes(item.label))]
   return <header className="sticky top-0 z-40 border-b border-white/10 bg-[#071923]/95 text-white backdrop-blur-xl">
     <div className="mx-auto flex min-h-[72px] w-full max-w-[1440px] items-center justify-between gap-5 px-5 lg:px-10">
       <Link href={base} className="flex min-w-0 items-center gap-3" aria-label={`Beranda ${website.name}`}>
-        <img src="/images/logo_bdg_putih.png" alt="Logo Kota Bandung" className="h-9 w-9 object-contain" />
-        <span className="min-w-0"><strong className="block truncate text-xs font-extrabold uppercase tracking-wide sm:text-sm">{website.name}</strong><span className="block text-[10px] font-semibold uppercase tracking-[.16em] text-slate-300">Pemerintah Kota Bandung</span></span>
+        <img src="/images/logo_bdg_putih.png" alt="Logo BDG" className="hidden h-8 w-8 shrink-0 object-contain sm:block sm:h-9 sm:w-9" />
+        <span aria-hidden="true" className="hidden h-8 w-px shrink-0 bg-white/20 sm:block" />
+        <img src="/images/logo_jawa_barat_putih.png" alt="Lambang Jawa Barat" className="h-8 w-8 shrink-0 object-contain sm:h-9 sm:w-9" />
+        <span aria-hidden="true" className="mx-0.5 hidden h-8 w-px shrink-0 bg-white/20 sm:block" />
+        <span className="min-w-0"><strong className="block truncate text-[11px] font-extrabold uppercase tracking-wide sm:text-sm">{website.name}</strong><span className="block truncate text-[9px] font-semibold uppercase tracking-[.12em] text-slate-300 sm:text-[10px]">Pemerintah Kota Bandung</span></span>
       </Link>
-      <nav className="hidden items-center gap-5 lg:flex">{links.map(([label, href]) => <Link key={href} href={href} className="text-xs font-semibold text-slate-200 transition hover:text-teal-300">{label}</Link>)}</nav>
-      <div className="hidden lg:block"><Link href={`${base}/kontak`} className="inline-flex shrink-0 items-center gap-2 rounded-full bg-teal-600 px-4 py-2.5 text-xs font-bold text-white shadow-sm transition hover:bg-teal-500"><MapPin className="h-3.5 w-3.5"/> Portal Warga</Link></div>
-      <MobilePortalMenu website={website} links={links}/>
+      <DesktopPortalNav base={base} links={links} infoLinks={infoLinks}/>
+      {moduleVisibility.kontak !== false && <div className="hidden xl:block"><Link href={`${base}/kontak`} className="inline-flex shrink-0 items-center gap-2 rounded-full bg-teal-600 px-4 py-2.5 text-xs font-bold text-white shadow-sm transition hover:bg-teal-500"><img src="/images/portal-warga.svg" alt="" className="h-4 w-4"/>Portal Warga</Link></div>}
+      <MobilePortalMenu website={website} links={mobileLinks} infoLinks={infoLinks} showContact={moduleVisibility.kontak !== false}/>
     </div>
   </header>
 }
 
-export function PortalFooter({ website, profile }) {
+export function PortalFooter({ website, profile, moduleVisibility = {} }) {
   const base = `/${website.subdomain}`
-  return <footer className="bg-[#071923] text-white">
-    <div className="mx-auto grid w-full max-w-[1440px] gap-8 px-5 py-10 md:grid-cols-[1.3fr_1fr] lg:px-10">
-      <div className="flex items-start gap-4"><img src="/images/logo_bdg_putih.png" alt="Logo Kota Bandung" className="h-11 w-11 object-contain"/><div><h2 className="text-sm font-extrabold uppercase">{website.name}</h2><p className="mt-1 text-xs text-slate-400">Pemerintah Kota Bandung · Jawa Barat</p></div></div>
-      <div className="grid gap-3 text-xs text-slate-300 sm:grid-cols-2">
-        {profile?.contact_address && <p className="flex gap-2"><MapPin className="h-4 w-4 shrink-0 text-teal-300"/>{profile.contact_address}</p>}
-        {profile?.office_phone && <p className="flex gap-2"><Phone className="h-4 w-4 shrink-0 text-teal-300"/>{profile.office_phone}</p>}
-        {profile?.instagram_username && <a className="flex gap-2 hover:text-teal-300" href={`https://instagram.com/${profile.instagram_username.replace(/^@/, '')}`}><Share2 className="h-4 w-4 text-teal-300"/>Instagram · {profile.instagram_username}</a>}
-        {profile?.facebook_page_name && <p className="flex gap-2"><Share2 className="h-4 w-4 text-teal-300"/>Facebook · {profile.facebook_page_name}</p>}
-        {profile?.youtube_channel_url && <a className="flex gap-2 hover:text-teal-300" href={profile.youtube_channel_url} target="_blank" rel="noreferrer"><Share2 className="h-4 w-4 text-teal-300"/>Kanal YouTube</a>}
+  return <footer className="bg-[#06141D] text-white">
+    <div className="mx-auto w-full max-w-[1440px] px-5 pb-6 pt-10 sm:px-7 sm:pb-7 sm:pt-12 lg:px-10">
+      <div className="flex flex-col gap-7 pb-8 md:flex-row md:items-center md:justify-between md:gap-8 md:pb-10">
+        <Link href={base} className="flex min-w-0 items-center gap-3" aria-label={`Beranda ${website.name}`}>
+          <img src="/images/logo_bdg_putih.png" alt="Logo BDG" className="h-9 w-8 shrink-0 object-contain"/>
+          <span aria-hidden="true" className="h-9 w-px shrink-0 bg-white/20"/>
+          <img src="/images/logo_jawa_barat_putih.png" alt="Lambang Jawa Barat" className="h-9 w-9 shrink-0 object-contain"/>
+          <span aria-hidden="true" className="mx-1 h-9 w-px shrink-0 bg-white/20"/>
+          <span className="min-w-0"><strong className="block truncate text-xs font-extrabold uppercase tracking-wide sm:text-sm">{website.name}</strong><span className="mt-1 block text-xs text-slate-300">Pemerintah Kota Bandung · Jawa Barat</span></span>
+        </Link>
+        <div className="flex flex-col gap-4 pl-1 sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-7 sm:gap-y-4 md:justify-end">
+          <a href="tel:112" className="flex min-w-0 items-center gap-3 rounded-xl sm:rounded-none">
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-teal-900/70 text-xs font-black text-teal-300">112</span>
+            <span><strong className="block text-xs font-bold text-white">Bandung Siaga 112</strong><span className="mt-0.5 block text-xs text-slate-400">Call Center Bebas Pulsa (24 Jam)</span></span>
+          </a>
+          {moduleVisibility.kontak !== false && profile?.official_email && <a href={`mailto:${profile.official_email}`} className="flex min-w-0 items-center gap-3">
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-slate-800 text-teal-300"><Mail className="h-4 w-4"/></span>
+            <span className="min-w-0"><strong className="block text-xs font-bold text-white">Email Resmi</strong><span className="mt-0.5 block break-all text-xs font-semibold text-teal-300">{profile.official_email}</span></span>
+          </a>}
+        </div>
+      </div>
+      <div className="flex flex-col gap-4 border-t border-white/10 pt-5 text-xs text-slate-400 sm:flex-row sm:items-center sm:justify-between sm:pt-7">
+        <p className="leading-relaxed">© {new Date().getFullYear()} {website.name} — Pemerintah Kota Bandung. Hak Cipta Dilindungi Undang-Undang.</p>
+        <div className="inline-flex w-fit max-w-full items-center gap-2 rounded-lg border border-teal-700/70 bg-teal-950/50 px-3 py-2 text-xs font-bold text-teal-300">
+          <img src="/images/logo_diskominfo.png" alt="Logo Diskominfo" className="h-6 w-6 shrink-0 object-contain"/>
+          <span>Powered by Multisite Diskominfo Kota Bandung</span>
+        </div>
       </div>
     </div>
-    <div className="border-t border-white/10"><div className="mx-auto flex w-full max-w-[1440px] flex-col gap-3 px-5 py-4 text-[11px] text-slate-400 sm:flex-row sm:items-center sm:justify-between lg:px-10"><span>© {new Date().getFullYear()} {website.name} — Pemerintah Kota Bandung. Hak Cipta Dilindungi Undang-Undang.</span><Link href={base} className="font-semibold text-teal-300">Portal Multi-Tenant Diskominfo</Link></div></div>
   </footer>
 }

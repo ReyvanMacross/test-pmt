@@ -43,7 +43,6 @@ export default async function HeroSliderPage({ params }) {
       <div><p className="text-xs text-slate-500">Kelola Konten Website / Hero Slider</p><h1 className="mt-1 text-2xl font-extrabold text-slate-900">Hero Slider (Banner Utama)</h1><a href={`/${website.subdomain}`} target="_blank" rel="noreferrer" className="mt-1 inline-flex text-sm font-medium text-blue-700 hover:underline">{website.name} · /{website.subdomain}</a></div>
       <Link href={`/admin/network/${website.id}/content`} className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">← Kembali</Link>
     </header>
-    <div className="rounded-2xl border border-blue-200 bg-blue-50 p-5 text-sm leading-relaxed text-blue-900"><strong>Slider 3 slot tetap.</strong> Isi badge, judul, deskripsi, dan gambar per slide. Slide yang disembunyikan tetap tersimpan sebagai draft. Tombol navigasi publik tetap diarahkan ke modul portal.</div>
     <HeroSliderManager websiteId={website.id} slides={slides}/>
   </div>
 }

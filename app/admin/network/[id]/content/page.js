@@ -4,6 +4,7 @@ import { getSession } from '@/lib/auth'
 import { query } from '@/lib/db'
 import ContentModulesClient from './ContentModulesClient'
 import { canManageWebsite } from '@/lib/website-access'
+import { CONTENT_MODULES } from '@/lib/content-modules'
 
 export async function generateMetadata({ params }) {
   const { id } = await params
@@ -34,6 +35,21 @@ export default async function ContentManagementPage({ params }) {
   // Otorisasi
   if (!(await canManageWebsite(session, website.id, website.user_id))) {
     redirect('/admin/network')
+  }
+
+  const moduleVisibility = Object.fromEntries(CONTENT_MODULES.map((module) => [module.slug, true]))
+  let moduleVisibilityReady = true
+  try {
+    const visibilityResult = await query(
+      'SELECT module_slug, is_enabled FROM website_module_settings WHERE website_id = $1',
+      [id]
+    )
+    visibilityResult.rows.forEach((row) => {
+      if (Object.hasOwn(moduleVisibility, row.module_slug)) moduleVisibility[row.module_slug] = row.is_enabled !== false
+    })
+  } catch (error) {
+    moduleVisibilityReady = false
+    console.error('Error fetching module visibility settings:', error)
   }
 
   // Konten modul teks/dokumen disimpan pada contents. Berita dan galeri memakai
@@ -139,7 +155,10 @@ export default async function ContentManagementPage({ params }) {
   const templateLabel = website.template_name || 'Template Kecamatan'
   const domainUrl = `/${website.subdomain}`
 
-  const contentVersion = JSON.stringify(Object.entries(existingContentsMap).map(([slug, item]) => [slug, item.has_content, item.title, item.body]))
+  const contentVersion = JSON.stringify({
+    content: Object.entries(existingContentsMap).map(([slug, item]) => [slug, item.has_content, item.title, item.body]),
+    moduleVisibility,
+  })
 
   return (
     <div className="flex flex-col w-full space-y-6">
@@ -203,6 +222,8 @@ export default async function ContentManagementPage({ params }) {
         key={contentVersion}
         website={website}
         existingContents={existingContentsMap}
+        initialModuleVisibility={moduleVisibility}
+        moduleVisibilityReady={moduleVisibilityReady}
       />
 
       {/* ── Operational Footer Help Banner ──────────────────────────── */}

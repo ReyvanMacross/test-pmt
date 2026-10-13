@@ -1,9 +1,9 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import Link from 'next/link'
 import { CONTENT_MODULES } from '@/lib/content-modules'
-import { saveModuleContentAction } from './actions'
+import { saveModuleContentAction, setWebsiteModuleVisibilityAction } from './actions'
 
 // ─── SVG Ikon untuk setiap modul ──────────────────────────────────────────────
 function ModuleIcon({ name }) {
@@ -147,28 +147,40 @@ function ModuleIcon({ name }) {
   }
 }
 
-export default function ContentModulesClient({ website, existingContents = {} }) {
+export default function ContentModulesClient({ website, existingContents = {}, initialModuleVisibility = {}, moduleVisibilityReady = true }) {
   const [currentCategory, setCurrentCategory] = useState('all')
   const [search, setSearch] = useState('')
   const [activeModalModule, setActiveModalModule] = useState(null)
   const [contentMap, setContentMap] = useState(existingContents)
   const [saving, setSaving] = useState(false)
-  const [saveSuccess, setSaveSuccess] = useState(false)
+  const [saveToast, setSaveToast] = useState(null)
   const [saveError, setSaveError] = useState(null)
+  const [moduleVisibility, setModuleVisibility] = useState(() => Object.fromEntries(
+    CONTENT_MODULES.map((module) => [module.slug, initialModuleVisibility[module.slug] !== false])
+  ))
+  const [visibilitySaving, setVisibilitySaving] = useState(null)
+  const [visibilityError, setVisibilityError] = useState(null)
+
+  useEffect(() => {
+    if (!saveToast) return undefined
+    const timeout = window.setTimeout(() => setSaveToast(null), 5000)
+    return () => window.clearTimeout(timeout)
+  }, [saveToast])
 
   function isModuleFilled(item) {
     return Boolean(item?.has_content || item?.title?.trim() || item?.body?.trim() || item?.has_images || item?.has_files)
   }
 
   // Total modul
-  const totalModules = CONTENT_MODULES.length
+  const enabledModules = CONTENT_MODULES.filter((module) => moduleVisibility[module.slug])
+  const totalModules = enabledModules.length
 
   // Status Sinkronisasi: Hitung modul unik yang sudah diinput/diedit (default 0 jika belum ada yang diinput)
   const filledCount = useMemo(() => {
-    return CONTENT_MODULES.filter((module) => isModuleFilled(contentMap[module.slug])).length
-  }, [contentMap])
+    return CONTENT_MODULES.filter((module) => moduleVisibility[module.slug] && isModuleFilled(contentMap[module.slug])).length
+  }, [contentMap, moduleVisibility])
 
-  const completionPercent = Math.min(100, Math.round((filledCount / totalModules) * 100))
+  const completionPercent = totalModules > 0 ? Math.min(100, Math.round((filledCount / totalModules) * 100)) : 0
   const neededCount = Math.max(0, totalModules - filledCount)
 
   // Filter modules berdasarkan kategori & search
@@ -196,14 +208,32 @@ export default function ContentModulesClient({ website, existingContents = {} })
 
   function handleOpenModal(mod) {
     setActiveModalModule(mod)
-    setSaveSuccess(false)
+    setSaveToast(null)
     setSaveError(null)
   }
 
   function handleCloseModal() {
     setActiveModalModule(null)
-    setSaveSuccess(false)
     setSaveError(null)
+  }
+
+  async function handleToggleModule(module) {
+    if (visibilitySaving) return
+    const nextEnabled = !moduleVisibility[module.slug]
+    setVisibilitySaving(module.slug)
+    setVisibilityError(null)
+    try {
+      const result = await setWebsiteModuleVisibilityAction(website.id, module.slug, nextEnabled)
+      if (result?.error) {
+        setVisibilityError(result.error)
+      } else {
+        setModuleVisibility((previous) => ({ ...previous, [module.slug]: nextEnabled }))
+      }
+    } catch (error) {
+      setVisibilityError(error.message || 'Pengaturan modul gagal disimpan.')
+    } finally {
+      setVisibilitySaving(null)
+    }
   }
 
   async function handleSaveContent(e) {
@@ -211,7 +241,7 @@ export default function ContentModulesClient({ website, existingContents = {} })
     if (!activeModalModule) return
     setSaving(true)
     setSaveError(null)
-    setSaveSuccess(false)
+    setSaveToast(null)
 
     const formData = new FormData(e.currentTarget)
     const titleVal = formData.get('title')?.trim()
@@ -222,6 +252,7 @@ export default function ContentModulesClient({ website, existingContents = {} })
 
       if (res?.error) {
         setSaveError(res.error)
+        setSaveToast({ type: 'error', message: res.error })
         setSaving(false)
       } else {
         const uploadedFile = formData.get('file')
@@ -242,19 +273,22 @@ export default function ContentModulesClient({ website, existingContents = {} })
           }
         })
         setSaving(false)
-        setSaveSuccess(true)
+        setSaveToast({ type: 'success', message: res.message || `Konten ${activeModalModule.title} berhasil disimpan.` })
         setTimeout(() => {
           handleCloseModal()
         }, 1000)
       }
     } catch (error) {
-      setSaveError(error.message || 'Gagal menyimpan konten. Silakan coba lagi.')
+      const message = error.message || 'Gagal menyimpan konten. Silakan coba lagi.'
+      setSaveError(message)
+      setSaveToast({ type: 'error', message })
       setSaving(false)
     }
   }
 
   return (
     <>
+      {saveToast && <div role={saveToast.type === 'error' ? 'alert' : 'status'} className={`fixed right-5 top-20 z-[100] flex max-w-sm items-start gap-3 rounded-xl border bg-white px-4 py-3 text-sm shadow-xl ${saveToast.type === 'success' ? 'border-emerald-200 text-emerald-800' : 'border-rose-200 text-rose-800'}`}><div className="flex-1"><p className="font-semibold">{saveToast.type === 'success' ? 'Berhasil disimpan' : 'Gagal menyimpan'}</p><p className="mt-0.5">{saveToast.message}</p></div><button type="button" aria-label="Tutup notifikasi" onClick={() => setSaveToast(null)} className="shrink-0 rounded p-0.5 hover:bg-slate-100"><svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" /></svg></button></div>}
       {/* ── Content Health / Completion Metric Widget ──────────────── */}
       <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-6">
         <div className="flex items-start gap-4 max-w-2xl">
@@ -382,6 +416,12 @@ export default function ContentModulesClient({ website, existingContents = {} })
 
       {/* ── 2. UNIFIED CONTENT CONTAINER (SEMUA MODUL DITAMPILKAN PENUH TANPA INNER SCROLL) ─ */}
       <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-sm">
+        <div className="mb-4 flex flex-col gap-1 rounded-lg border border-blue-100 bg-blue-50 px-4 py-3 text-sm text-blue-900 sm:flex-row sm:items-center sm:justify-between">
+          <span><strong>Modul yang ditampilkan:</strong> pilih modul yang dipakai website ini. Modul tersembunyi tidak tampil di halaman publik, navigasi, atau arsip. Perubahan tersimpan otomatis.</span>
+          <span className="shrink-0 font-semibold">{enabledModules.length} aktif · {CONTENT_MODULES.length - enabledModules.length} disembunyikan</span>
+        </div>
+        {!moduleVisibilityReady && <p role="alert" className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">Pengaturan belum tersedia di database. Jalankan migration <code>202610130001_website_module_visibility.sql</code> pada Laragon dan Supabase untuk mengaktifkannya.</p>}
+        {visibilityError && <p role="alert" className="mb-4 rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">{visibilityError}</p>}
         {filteredModules.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-12 text-center">
             <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 mb-3">
@@ -402,11 +442,12 @@ export default function ContentModulesClient({ website, existingContents = {} })
             {filteredModules.map((mod) => {
               const contentData = contentMap[mod.slug]
               const isFilled = isModuleFilled(contentData)
+              const isEnabled = moduleVisibility[mod.slug]
 
               return (
                 <div
                   key={mod.slug}
-                  className="group bg-slate-50 hover:bg-blue-50/50 border border-slate-200 rounded-lg p-3.5 flex items-center justify-between transition-colors gap-3"
+                  className={`group border rounded-lg p-3.5 flex flex-col sm:flex-row sm:items-center sm:justify-between transition-colors gap-3 ${isEnabled ? 'bg-slate-50 hover:bg-blue-50/50 border-slate-200' : 'bg-slate-100/70 border-slate-200 opacity-80'}`}
                 >
                   <div className="flex items-center gap-3 min-w-0 flex-1">
                     <div className={`w-9 h-9 rounded-xl ${mod.iconBg} flex items-center justify-center flex-shrink-0`}>
@@ -425,6 +466,19 @@ export default function ContentModulesClient({ website, existingContents = {} })
                       </span>
                     </div>
                   </div>
+                  <div className="flex shrink-0 items-center justify-between gap-3 sm:justify-end">
+                    <button
+                      type="button"
+                      role="switch"
+                      aria-checked={isEnabled}
+                      aria-label={`${isEnabled ? 'Sembunyikan' : 'Tampilkan'} modul ${mod.title}`}
+                      disabled={visibilitySaving !== null || !moduleVisibilityReady}
+                      onClick={() => handleToggleModule(mod)}
+                      className={`inline-flex min-w-[7.5rem] shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-lg border px-3 py-1.5 text-xs font-semibold transition disabled:cursor-wait disabled:opacity-60 ${isEnabled ? 'border-emerald-200 bg-emerald-50 text-emerald-700' : 'border-slate-300 bg-white text-slate-600'}`}
+                    >
+                      <span className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors ${isEnabled ? 'bg-emerald-500' : 'bg-slate-400'}`}><span className={`absolute top-0.5 h-4 w-4 rounded-full bg-white transition-transform ${isEnabled ? 'translate-x-4' : 'translate-x-0.5'}`}/></span>
+                      {visibilitySaving === mod.slug ? 'Menyimpan…' : isEnabled ? 'Tampil' : 'Disembunyikan'}
+                    </button>
                     {mod.actionType === 'Edit' || ['hero-slider', 'berita', 'galeri-gambar', 'galeri-video', 'pengumuman', 'inovasi', 'agenda-kegiatan', 'layanan'].includes(mod.slug) ? (
                     <Link
                       href={
@@ -459,6 +513,7 @@ export default function ContentModulesClient({ website, existingContents = {} })
                       {mod.actionType}
                     </button>
                   )}
+                  </div>
                 </div>
               )
             })}
@@ -497,15 +552,6 @@ export default function ContentModulesClient({ website, existingContents = {} })
             </div>
 
             {/* Notification messages */}
-            {saveSuccess && (
-              <div className="mb-4 bg-emerald-50 border border-emerald-200 text-emerald-700 px-4 py-3 rounded-xl text-xs font-semibold flex items-center gap-2">
-                <svg className="w-4 h-4 text-emerald-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
-                </svg>
-                <span>Konten berhasil disimpan dan status sinkronisasi diperbarui.</span>
-              </div>
-            )}
-
             {saveError && (
               <div className="mb-4 bg-rose-50 border border-rose-200 text-rose-700 px-4 py-3 rounded-xl text-xs font-semibold flex items-center gap-2">
                 <svg className="w-4 h-4 text-rose-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">

@@ -36,7 +36,7 @@ export default function Sidebar({ userRole, permissions = [] }) {
 
   return (
     <aside
-      className="w-64 text-white flex flex-col flex-shrink-0 z-30 shadow-xl border-r border-white/10 h-screen select-none"
+      className="w-64 min-h-0 text-white flex flex-col flex-shrink-0 z-30 shadow-xl border-r border-white/10 h-full select-none"
       style={{
         width: '260px',
         minWidth: '260px',

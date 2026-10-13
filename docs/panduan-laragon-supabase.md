@@ -29,6 +29,8 @@ Peralihan `DATABASE_URL` hanya mengalihkan query database. Itu tidak menyalin da
 
 Setelah skema dasar tersedia, jalankan [`202610020001_hero_slides_and_website_assignments.sql`](../supabase/migrations/202610020001_hero_slides_and_website_assignments.sql) satu kali pada **setiap database yang akan dipakai aplikasi** (Supabase maupun Laragon). Di Supabase, tempel isi file ke **SQL Editor** dan klik **Run**. Migrasi membuat penyimpanan tiga slide Hero Slider, relasi akun daerah ke website, mengisi slot kosong untuk website yang sudah ada, dan memindahkan banner lama dari Profil/Beranda ke Slide 1.
 
+Untuk editor **Profil Pimpinan**, jalankan juga [`202610130002_leadership_rank_metadata.sql`](../supabase/migrations/202610130002_leadership_rank_metadata.sql) pada tiap database. Migrasi ini menambah kolom JSONB `contents.metadata` untuk menyimpan Pangkat/Golongan PNS bersama konten pimpinan tanpa mengubah isi kolom konten yang sudah ada.
+
 Setelah migrasi, buat atau edit akun daerah dari **User Management**, pilih website dengan tipe template yang cocok, lalu atur hak akses akun. Akun daerah hanya bisa melihat/mengubah website yang ditugaskan dan harus memiliki hak `Kelola Website OPD Terhubung`. Super-admin tetap dapat mengelola semua website.
 
 ## A. Siapkan Supabase dengan SQL paste langsung
@@ -99,17 +101,17 @@ Gunakan nilai yang sama dengan konfigurasi Laragon Anda jika host, port, user, p
 ## C. Atur koneksi Supabase
 
 1. Di dashboard Supabase, buka **Connect** dan salin connection string PostgreSQL yang disediakan.
-2. Untuk menjalankan Next.js dari Windows/laptop, pilih **Session pooler** jika direct endpoint tidak dapat dijangkau karena jaringan IPv4. Salin host, port, username, database, dan format URL persis dari dashboard; jangan menebak host atau username pooler.
+2. Untuk aplikasi Next.js yang melayani banyak permintaan web, pilih **Transaction pooler** di Supabase Dashboard → Connect. Salin connection string lengkap dari dashboard; jangan menebak host atau username pooler. Mode ini memakai port 6543 dan memakai ulang koneksi database untuk permintaan singkat.
 3. Isi `DATABASE_URL` dari connection string itu ke `.env.local`, lalu aktifkan SSL:
 
 ```dotenv
-DATABASE_URL=postgresql://USER_DARI_DASHBOARD:URL_ENCODED_PASSWORD@HOST_DARI_DASHBOARD:5432/postgres
+DATABASE_URL=postgresql://USER_DARI_DASHBOARD:URL_ENCODED_PASSWORD@HOST_DARI_DASHBOARD:6543/postgres
 DB_SSL=true
-DB_POOL_MAX=5
+DB_POOL_MAX=2
 SESSION_SECRET=SECRET_RANDOM_KHUSUS_ENV_INI_MINIMAL_32_KARAKTER
 ```
 
-Nilai di atas hanya contoh bentuk. Password database Supabase adalah password database project, bukan password akun Supabase. Jika password memiliki karakter khusus, URL-encode bagian password saja. Untuk koneksi Supabase dari proses server long-lived seperti `next dev`, Session pooler port 5432 adalah pilihan praktis. Direct connection cocok jika jaringan mendukung IPv6; Transaction pooler port 6543 ditujukan untuk pola koneksi yang lebih singkat/serverless dan memiliki batasan fitur seperti prepared statements.
+Nilai di atas hanya contoh bentuk. Password database Supabase adalah password database project, bukan password akun Supabase. Jika password memiliki karakter khusus, URL-encode bagian password saja. `DB_POOL_MAX` membatasi koneksi pool lokal aplikasi; angka ini bukan jumlah pengguna web yang didukung. Jangan menaikkannya ke 60 untuk mengatasi batas pooler. Transaction pooler mendukung banyak koneksi klien dengan memakai ulang koneksi backend. Hindari fitur yang butuh status sesi PostgreSQL dan prepared statement bernama; aplikasi ini menggunakan query biasa dan transaksi eksplisit.
 
 ## D. Jalankan dan verifikasi dua target
 
