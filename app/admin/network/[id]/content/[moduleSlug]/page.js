@@ -4,6 +4,13 @@ import { getSession } from '@/lib/auth'
 import { query } from '@/lib/db'
 import { CONTENT_MODULES } from '@/lib/content-modules'
 import EditModuleContentForm from './EditModuleContentForm'
+import PublicDocumentManager from './PublicDocumentManager'
+
+const PUBLIC_DOCUMENT_MODULES = new Set([
+  'ppid', 'ppid-utama', 'daftar-informasi-publik', 'daftar-informasi-dikecualikan',
+  'informasi-wajib-berkala', 'informasi-tersedia-setiap-saat', 'informasi-serta-merta',
+  'permohonan-informasi-online', 'pengajuan-keberatan-online',
+])
 
 export async function generateMetadata({ params }) {
   const { id, moduleSlug } = await params
@@ -80,6 +87,10 @@ export default async function EditModuleContentPage({ params }) {
     }
   } catch (err) {
     console.error('Error fetching module content:', err)
+  }
+
+  if (PUBLIC_DOCUMENT_MODULES.has(moduleMeta.slug)) {
+    return <PublicDocumentManager website={website} moduleMeta={moduleMeta} initialContent={initialContent}/>
   }
 
   return (

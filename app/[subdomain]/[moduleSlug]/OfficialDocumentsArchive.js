@@ -18,7 +18,7 @@ const dateFormatter = new Intl.DateTimeFormat('id-ID', { month: 'short', year: '
 
 function formatUpdatedAt(value) {
   if (!value) return 'Tanggal pembaruan belum tersedia'
-  const date = new Date(value)
+  const date = /^\d{4}-\d{2}$/.test(value) ? new Date(`${value}-01T00:00:00.000Z`) : new Date(value)
   return Number.isNaN(date.getTime()) ? 'Tanggal pembaruan belum tersedia' : `Diperbarui: ${dateFormatter.format(date)}`
 }
 
@@ -43,7 +43,7 @@ function DocumentCard({ document, subdomain }) {
   return <article className="flex min-w-0 flex-col justify-between gap-5 rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md sm:p-6">
     <div className="space-y-3">
       <div className="flex flex-wrap items-center justify-between gap-2"><span className={`rounded-md border px-2.5 py-1 text-[9px] font-extrabold uppercase tracking-wide ${categoryStyles[document.category] || categoryStyles.ppid}`}>{document.categoryLabel}</span><span className="text-[9px] font-semibold uppercase text-slate-400">{file ? `${fileLabel(file)}${formatFileSize(file.size) ? ` | ${formatFileSize(file.size)}` : ''}` : external ? 'Portal Resmi' : 'Informasi'}</span></div>
-      <h2 className="text-sm font-bold leading-snug text-slate-900 sm:text-base"><Link href={detailHref} className="hover:text-teal-700">{document.title}</Link></h2>
+      <h2 className="text-sm font-bold leading-snug text-slate-900 sm:text-base">{fileUrl ? <a href={fileUrl} target="_blank" rel="noreferrer" className="hover:text-teal-700">{document.title}</a> : <Link href={detailHref} className="hover:text-teal-700">{document.title}</Link>}</h2>
       <p className="line-clamp-4 text-xs leading-relaxed text-slate-500">{document.description || document.moduleDescription}</p>
     </div>
     <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-3">
@@ -88,7 +88,7 @@ export default function OfficialDocumentsArchive({ subdomain, websiteName, docum
         <p className="text-[11px] text-slate-500" aria-live="polite">Menampilkan {visibleDocuments.length} dari {documents.length} dokumen</p>
       </section>
 
-      {visibleDocuments.length ? <section aria-label="Daftar dokumen" className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{visibleDocuments.map((document) => <DocumentCard key={document.slug} document={document} subdomain={subdomain}/>)}</section> : <section className="rounded-2xl border border-dashed border-slate-300 bg-white px-5 py-12 text-center"><FileText className="mx-auto h-8 w-8 text-slate-300"/><h2 className="mt-3 font-bold text-slate-800">Dokumen belum tersedia</h2><p className="mx-auto mt-1 max-w-lg text-xs leading-relaxed text-slate-500">{search ? 'Tidak ada dokumen yang sesuai dengan pencarian ini.' : 'Belum ada dokumen pada kategori ini. Informasi akan ditampilkan setelah diperbarui melalui Kelola Konten.'}</p></section>}
+      {visibleDocuments.length ? <section aria-label="Daftar dokumen" className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{visibleDocuments.map((document) => <DocumentCard key={document.key || document.slug} document={document} subdomain={subdomain}/>)}</section> : <section className="rounded-2xl border border-dashed border-slate-300 bg-white px-5 py-12 text-center"><FileText className="mx-auto h-8 w-8 text-slate-300"/><h2 className="mt-3 font-bold text-slate-800">Dokumen belum tersedia</h2><p className="mx-auto mt-1 max-w-lg text-xs leading-relaxed text-slate-500">{search ? 'Tidak ada dokumen yang sesuai dengan pencarian ini.' : 'Belum ada dokumen pada kategori ini. Informasi akan ditampilkan setelah diperbarui melalui Kelola Konten.'}</p></section>}
     </main>
   </>
 }

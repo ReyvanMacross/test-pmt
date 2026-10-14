@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
-import { ArrowLeft, ArrowUpRight, BadgeCheck, Clock3, FileText, Flag, House, MapPin, Newspaper, Play, Ruler, UsersRound } from 'lucide-react'
+import { ArrowLeft, ArrowUpRight, BadgeCheck, Clock3, FileText, Flag, House, MapPin, Newspaper, Ruler, UsersRound } from 'lucide-react'
 import { contentIsFilled, plainContent, getKecamatanPortal, getKecamatanWebsite } from '@/lib/public-kecamatan'
 import { CONTENT_MODULES } from '@/lib/content-modules'
 import { PortalFooter, PortalHeader } from '../PortalChrome'
@@ -11,6 +11,7 @@ import ContactPage from './ContactPage'
 import OfficialDocumentsArchive from './OfficialDocumentsArchive'
 import OfficialDocumentDetail from './OfficialDocumentDetail'
 import ProgramInnovationPage from './ProgramInnovationPage'
+import PublicGallery from './PublicGallery'
 import { PUBLIC_DOCUMENT_MODULES, PUBLIC_DOCUMENT_MODULE_SLUGS } from '@/lib/public-documents'
 
 export const dynamic = 'force-dynamic'
@@ -123,7 +124,6 @@ function ProfileRegionPage({ portal, subdomain }) {
       {portal.moduleVisibility?.['struktur-organisasi'] !== false && <section id="struktur-organisasi" className="scroll-mt-24 space-y-5"><div className="mx-auto max-w-2xl space-y-2 text-center"><span className="inline-flex rounded-full border border-teal-500/20 bg-teal-50 px-3.5 py-1 text-xs font-bold uppercase tracking-widest text-teal-700">Tata Kelola Pemerintahan</span><h2 className="text-2xl font-extrabold tracking-tight text-slate-900 sm:text-3xl">Struktur Organisasi {website.name}</h2><p className="text-sm text-slate-600">Bagan hierarki pembagian tugas dan fungsi aparatur wilayah.</p></div><Panel>{plainContent(structure.body || '') && <p className="mb-4 whitespace-pre-line text-sm leading-7 text-slate-600">{plainContent(structure.body)}</p>}<OrganizationStructureViewer content={structure} headerTitle={structure.title || 'Bagan Susunan Organisasi'} subtitle="Informasi struktur dari pengelolaan konten website."/><FileLinks files={structure.files}/></Panel></section>}
 
       {!stats.length && !contentIsFilled(leader) && !contentIsFilled(profileContent) && !vision && !mission && !contentIsFilled(structure) && <Panel><p className="text-sm text-slate-500">Informasi profil wilayah belum tersedia. Silakan lengkapi modul Profil, Profil Pimpinan, dan Struktur Organisasi melalui Kelola Konten.</p></Panel>}
-      <div className="flex justify-center"><Link href={`/${subdomain}#arsip`} className="inline-flex items-center gap-2 rounded-full border border-teal-700/20 bg-white px-5 py-2.5 text-sm font-bold text-teal-700 shadow-sm hover:bg-teal-50"><ArrowLeft className="h-4 w-4"/>Kembali ke Arsip & Modul</Link></div>
     </main>
   </>
 }
@@ -147,7 +147,7 @@ function ModuleRecords({ slug, portal }) {
   if (slug === 'galeri-gambar' || slug === 'galeri-video') {
     const type = slug === 'galeri-gambar' ? 'image' : 'video'
     const albums = portal.albums.filter((album) => album.type === type)
-    return albums.length ? <div className="space-y-8">{albums.map((album) => <Panel key={album.id}><div className="mb-4 flex flex-wrap items-end justify-between gap-2"><div><h2 className="font-extrabold">{album.title}</h2><p className="mt-1 text-xs text-slate-500">{new Date(album.album_date).toLocaleDateString('id-ID',{day:'numeric',month:'long',year:'numeric'})} · {album.item_count} item</p></div></div><div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">{album.items.map((item) => <article key={item.id} className="overflow-hidden rounded-xl border border-slate-200">{type === 'image' ? <img src={item.path} alt={item.name || ''} className="aspect-[4/3] w-full object-cover" loading="lazy"/> : (item.path?.startsWith('http') && !item.path.includes('/storage/v1/object/public/')) ? <a href={item.path} target="_blank" rel="noreferrer" className="flex aspect-video items-center justify-center gap-2 bg-slate-900 text-sm font-bold text-white"><Play className="h-5 w-5"/>Buka video eksternal</a> : <video src={item.path} controls preload="metadata" className="aspect-video w-full bg-slate-950"/>}<div className="p-3"><h3 className="text-xs font-bold">{item.name}</h3>{item.description && <p className="mt-1 text-xs text-slate-500">{plainContent(item.description)}</p>}</div></article>)}</div></Panel>)}</div> : <Panel><p className="text-sm text-slate-500">Belum ada album untuk modul ini.</p></Panel>
+    return <PublicGallery albums={albums} type={type} websiteName={portal.website.name} />
   }
   if (slug === 'kontak') return <ContactPage portal={portal}/>
   if (slug === 'profil') return portal.profile ? <div className="space-y-4"><Panel><h2 className="font-extrabold">Data Wilayah {portal.website.name}</h2><div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">{[['Luas Wilayah',portal.profile.luas_wilayah,'km²'],['Jumlah RW',portal.profile.jumlah_rw,'RW'],['Jumlah RT',portal.profile.jumlah_rt,'RT'],['Jumlah KK',portal.profile.jumlah_kk,'KK'],['Total Penduduk',portal.profile.total_jiwa,'Jiwa'],['Kepuasan Warga',portal.profile.kepuasan_warga,'%']].filter(([,value])=>value).map(([label,value,unit])=><div key={label} className="rounded-xl bg-slate-50 p-4"><p className="text-[10px] font-bold uppercase text-slate-400">{label}</p><p className="mt-1 font-extrabold text-teal-700">{value} {unit}</p></div>)}</div><div id="visi-misi" className="scroll-mt-24">{portal.profile.visi && <div className="mt-5"><h3 className="text-xs font-bold uppercase text-slate-500">Visi</h3><p className="mt-2 whitespace-pre-line text-sm leading-7 text-slate-600">{plainContent(portal.profile.visi)}</p></div>}{portal.profile.misi && <div className="mt-4"><h3 className="text-xs font-bold uppercase text-slate-500">Misi</h3><p className="mt-2 whitespace-pre-line text-sm leading-7 text-slate-600">{plainContent(portal.profile.misi)}</p></div>}</div><ProfileBoundaries profile={portal.profile}/></Panel>{portal.profile.maps_embed_url && <Panel><h2 className="font-extrabold">Peta Wilayah</h2><GoogleMap url={portal.profile.maps_embed_url} title={`Peta wilayah ${portal.website.name}`}/></Panel>}</div> : <Panel><p className="text-sm text-slate-500">Data profil wilayah belum tersedia.</p></Panel>
@@ -180,11 +180,36 @@ export default async function PublicModulePage({ params }) {
   if (moduleSlug === 'ppid') {
     const documents = PUBLIC_DOCUMENT_MODULES
       .filter((entry) => portal.moduleVisibility?.[entry.slug] !== false)
-      .map((entry) => {
+      .flatMap((entry) => {
         const content = portal.contents[entry.slug]
-        if (!contentIsFilled(content) && !content?.metadata?.external_url) return null
+        const savedDocuments = Array.isArray(content?.metadata?.public_documents) ? content.metadata.public_documents : []
+        if (savedDocuments.length) return [...savedDocuments.map((document) => ({
+          key: document.id,
+          slug: entry.slug,
+          category: entry.category,
+          categoryLabel: entry.label,
+          title: document.title || entry.label,
+          description: plainContent(document.description || ''),
+          moduleDescription: '',
+          updatedAt: document.revision_month ? `${document.revision_month}-01T00:00:00.000Z` : document.updated_at || null,
+          attachments: document.attachment ? [document.attachment] : [],
+          externalUrl: null,
+        })), ...(content?.metadata?.external_url ? [{
+          key: `${entry.slug}-portal`,
+          slug: entry.slug,
+          category: entry.category,
+          categoryLabel: entry.label,
+          title: 'Portal Layanan Informasi Publik (PPID Utama Kota Bandung)',
+          description: 'Kanal terpadu permohonan informasi publik, pengajuan keberatan, dan layanan informasi berkala Kota Bandung.',
+          moduleDescription: '',
+          updatedAt: content?.updated_at || null,
+          attachments: [],
+          externalUrl: content.metadata.external_url,
+        }] : [])]
+        if (!contentIsFilled(content) && !content?.metadata?.external_url) return []
         const moduleMeta = CONTENT_MODULES.find((item) => item.slug === entry.slug)
-        return {
+        return [{
+          key: entry.slug,
           slug: entry.slug,
           category: entry.category,
           categoryLabel: entry.label,
@@ -194,9 +219,8 @@ export default async function PublicModulePage({ params }) {
           updatedAt: content?.updated_at || null,
           attachments: [...(Array.isArray(content?.files) ? content.files : []), ...(Array.isArray(content?.images) ? content.images : [])],
           externalUrl: content?.metadata?.external_url || null,
-        }
+        }]
       })
-      .filter(Boolean)
     const ppidContent = portal.contents.ppid
     const ppidIntroduction = portal.moduleVisibility.ppid !== false && contentIsFilled(ppidContent) ? {
       title: ppidContent.title || 'Profil PPID Pelaksana',

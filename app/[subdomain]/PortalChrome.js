@@ -13,11 +13,13 @@ export function PortalHeader({ website, moduleVisibility = {} }) {
     { label: 'Agenda Kegiatan', href: `${base}/agenda-kegiatan`, enabled: isEnabled('agenda-kegiatan') },
     { label: 'Program dan Kegiatan', href: `${base}/program-dan-kegiatan`, enabled: isEnabled('program-dan-kegiatan') },
     { label: 'Inovasi Wilayah', href: `${base}/inovasi`, enabled: isEnabled('inovasi') },
+    { label: 'Galeri Foto', href: `${base}/galeri-gambar`, enabled: isEnabled('galeri-gambar') },
+    { label: 'Galeri Video', href: `${base}/galeri-video`, enabled: isEnabled('galeri-video') },
     { label: 'Dokumen Resmi', href: `${base}/ppid`, enabled: isEnabled('ppid') },
     { label: 'Kontak', href: `${base}/kontak`, enabled: isEnabled('kontak') },
   ].filter((item) => item.enabled)
   const quickLinks = links.filter((item) => ['Beranda', 'Layanan Publik', 'Profil Wilayah', 'Kabar Berita', 'Dokumen Resmi', 'Kontak'].includes(item.label))
-  const infoLinks = links.filter((item) => ['Kabar Berita', 'Agenda Kegiatan', 'Program dan Kegiatan', 'Inovasi Wilayah'].includes(item.label))
+  const infoLinks = links.filter((item) => ['Kabar Berita', 'Agenda Kegiatan', 'Program dan Kegiatan', 'Inovasi Wilayah', 'Galeri Foto', 'Galeri Video'].includes(item.label))
   const mobileLinks = [{ label: 'Beranda', href: base }, ...quickLinks.filter((item) => !['Beranda', 'Kabar Berita'].includes(item.label))]
   return <header className="sticky top-0 z-40 border-b border-white/10 bg-[#071923]/95 text-white backdrop-blur-xl">
     <div className="mx-auto flex min-h-[72px] w-full max-w-[1440px] items-center justify-between gap-5 px-5 lg:px-10">

@@ -60,15 +60,14 @@ export default async function AdminLayout({ children }) {
   const roleLabel = roleNames[userRole] ?? 'Administrator'
 
   return (
-    <div className={`${jakarta.className} fixed inset-0 bg-slate-50 text-slate-800 antialiased overflow-hidden`}>
-      <div className="flex h-full min-h-0 overflow-hidden">
-        {/* ── Sidebar ────────────────────────────────────────────────────── */}
+    <div className={`${jakarta.className} min-h-screen w-full bg-slate-50 text-slate-800 antialiased`}>
+      <div className="flex min-h-screen items-start">
+        <div className="sticky top-0 h-screen shrink-0">
           <Sidebar userRole={userRole} permissions={user.permissions || []} />
+        </div>
 
-        {/* ── Main Content Wrapper ───────────────────────────────────────── */}
-        <div className="flex-1 flex flex-col min-w-0 overflow-hidden bg-slate-50">
-          {/* Top Header */}
-          <header className="bg-white border-b border-slate-200 h-16 px-8 flex items-center justify-between sticky top-0 z-20 shadow-xs flex-shrink-0">
+        <div className="min-h-screen min-w-0 flex-1 bg-slate-50">
+          <header className="sticky top-0 z-20 flex h-16 min-w-0 items-center justify-between border-b border-slate-200 bg-white px-4 shadow-xs sm:px-8">
             {/* Breadcrumbs — dynamic */}
             <Breadcrumb />
 
@@ -90,7 +89,7 @@ export default async function AdminLayout({ children }) {
             </div>
           </header>
 
-          {/* The main panel is the only admin page scroll container. */}
+          {/* Keep page scrolling on the document so route changes cannot hide the app chrome. */}
           <AdminMain>{children}</AdminMain>
         </div>
       </div>

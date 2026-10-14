@@ -244,3 +244,139 @@ export async function saveModuleContentAction(websiteId, moduleSlug, formData) {
     return { error: err.message || 'Gagal menyimpan konten. Silakan coba lagi.' }
   }
 }
+
+const PUBLIC_DOCUMENT_EDITOR_MODULES = new Set([
+  'ppid', 'ppid-utama', 'daftar-informasi-publik', 'daftar-informasi-dikecualikan',
+  'informasi-wajib-berkala', 'informasi-tersedia-setiap-saat', 'informasi-serta-merta',
+  'permohonan-informasi-online', 'pengajuan-keberatan-online',
+])
+
+async function getPublicDocumentContent(websiteId, moduleSlug) {
+  const menuItemId = await getOrCreateMenuItemId(moduleSlug)
+  const result = await query(
+    'SELECT title, body, images, files, metadata FROM contents WHERE website_id = $1 AND menu_item_id = $2 LIMIT 1',
+    [websiteId, menuItemId]
+  )
+  return { menuItemId, row: result.rows[0] || null }
+}
+
+function publicDocumentMetadata(value) {
+  return value && typeof value === 'object' && !Array.isArray(value) ? { ...value } : {}
+}
+
+export async function savePublicDocumentIntroductionAction(websiteId, moduleSlug, formData) {
+  try {
+    const session = await getSession()
+    if (!session) return { error: 'Sesi berakhir. Silakan masuk kembali.' }
+    if (!PUBLIC_DOCUMENT_EDITOR_MODULES.has(moduleSlug)) return { error: 'Modul dokumen tidak dikenali.' }
+    await authorizeWebsite(websiteId, session)
+    const title = String(formData.get('title') || '').trim().slice(0, 255) || null
+    const body = String(formData.get('body') || '').trim().slice(0, 20000) || null
+    const externalUrl = moduleSlug === 'ppid-utama' ? String(formData.get('external_url') || '').trim().slice(0, 2000) : null
+    if (moduleSlug === 'ppid-utama' && externalUrl) {
+      try {
+        const url = new URL(externalUrl)
+        if (url.protocol !== 'https:' || !url.hostname) throw new Error()
+      } catch { return { error: 'Tautan PPID Utama harus berupa alamat HTTPS yang valid.' } }
+    }
+    const { menuItemId, row } = await getPublicDocumentContent(websiteId, moduleSlug)
+    const metadata = publicDocumentMetadata(row?.metadata)
+    if (moduleSlug === 'ppid-utama') metadata.external_url = externalUrl || null
+    await query(
+      `INSERT INTO contents (website_id, menu_item_id, title, body, images, files, metadata, updated_at)
+       VALUES ($1, $2, $3, $4, $5::jsonb, $6::jsonb, $7::jsonb, NOW())
+       ON CONFLICT (website_id, menu_item_id) DO UPDATE SET title = EXCLUDED.title, body = EXCLUDED.body, metadata = EXCLUDED.metadata, updated_at = NOW()`,
+      [websiteId, menuItemId, title, body, JSON.stringify(row?.images || []), JSON.stringify(row?.files || []), JSON.stringify(metadata)]
+    )
+    const website = await query('SELECT subdomain FROM websites WHERE id = $1 LIMIT 1', [websiteId])
+    revalidatePath(`/admin/network/${websiteId}/content/${moduleSlug}`)
+    if (website.rows[0]?.subdomain) revalidatePath(`/${website.rows[0].subdomain}/ppid`)
+    return { success: true, message: 'Informasi pengantar berhasil disimpan.' }
+  } catch (error) {
+    console.error('Error saving public document introduction:', error)
+    return { error: error.message || 'Informasi pengantar gagal disimpan.' }
+  }
+}
+
+export async function savePublicDocumentItemAction(websiteId, moduleSlug, formData) {
+  let uploadedFile = null
+  try {
+    const session = await getSession()
+    if (!session) return { error: 'Sesi berakhir. Silakan masuk kembali.' }
+    if (!PUBLIC_DOCUMENT_EDITOR_MODULES.has(moduleSlug)) return { error: 'Modul dokumen tidak dikenali.' }
+    await authorizeWebsite(websiteId, session)
+    const id = String(formData.get('document_id') || '').trim()
+    const title = String(formData.get('document_title') || '').trim().slice(0, 255)
+    const description = String(formData.get('document_description') || '').trim().slice(0, 4000)
+    const revisionMonth = String(formData.get('revision_month') || '').trim()
+    if (!title) return { error: 'Judul dokumen wajib diisi.' }
+    if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(revisionMonth)) return { error: 'Pilih bulan dan tahun pembaruan yang valid.' }
+    const file = formData.get('document_file')
+    const hasUpload = file && typeof file === 'object' && typeof file.size === 'number' && file.size > 0
+    if (hasUpload && (file.type !== 'application/pdf' || file.size > 10 * 1024 * 1024)) {
+      return { error: 'Berkas harus PDF dengan ukuran maksimal 10 MB.' }
+    }
+    const { menuItemId, row } = await getPublicDocumentContent(websiteId, moduleSlug)
+    const metadata = publicDocumentMetadata(row?.metadata)
+    const documents = Array.isArray(metadata.public_documents) ? [...metadata.public_documents] : []
+    const previousIndex = id ? documents.findIndex((item) => item.id === id) : -1
+    if (id && previousIndex < 0) return { error: 'Dokumen yang akan diedit tidak ditemukan.' }
+    if (!hasUpload && previousIndex < 0) return { error: 'Unggah berkas PDF untuk dokumen baru.' }
+    const previous = previousIndex >= 0 ? documents[previousIndex] : null
+    if (hasUpload) {
+      const safeName = path.basename(file.name || 'dokumen.pdf').replace(/[^a-zA-Z0-9._-]/g, '_').slice(0, 120)
+      uploadedFile = await uploadPortalFile({ file, objectPath: `websites/${websiteId}/public-documents/${moduleSlug}/${randomUUID()}_${safeName}` })
+    }
+    const nextDocument = {
+      id: previous?.id || randomUUID(),
+      title,
+      description,
+      revision_month: revisionMonth,
+      attachment: hasUpload ? { url: uploadedFile.publicUrl, path: uploadedFile.path, bucket: uploadedFile.bucket, name: file.name, size: file.size, type: file.type } : previous.attachment,
+      updated_at: new Date().toISOString(),
+    }
+    if (previousIndex >= 0) documents[previousIndex] = nextDocument
+    else documents.unshift(nextDocument)
+    metadata.public_documents = documents
+    await query(
+      `INSERT INTO contents (website_id, menu_item_id, title, body, images, files, metadata, updated_at)
+       VALUES ($1, $2, $3, $4, $5::jsonb, $6::jsonb, $7::jsonb, NOW())
+       ON CONFLICT (website_id, menu_item_id) DO UPDATE SET metadata = EXCLUDED.metadata, updated_at = NOW()`,
+      [websiteId, menuItemId, row?.title || null, row?.body || null, JSON.stringify(row?.images || []), JSON.stringify(row?.files || []), JSON.stringify(metadata)]
+    )
+    uploadedFile = null
+    if (hasUpload && previous?.attachment?.url) await removePortalFile(previous.attachment.url).catch((error) => console.warn('Could not remove replaced public document:', error.message))
+    const website = await query('SELECT subdomain FROM websites WHERE id = $1 LIMIT 1', [websiteId])
+    revalidatePath(`/admin/network/${websiteId}/content/${moduleSlug}`)
+    if (website.rows[0]?.subdomain) revalidatePath(`/${website.rows[0].subdomain}/ppid`)
+    return { success: true, document: nextDocument, message: previous ? 'Dokumen berhasil diperbarui.' : 'Dokumen berhasil ditambahkan.' }
+  } catch (error) {
+    if (uploadedFile?.publicUrl) await removePortalFile(uploadedFile.publicUrl).catch(() => {})
+    console.error('Error saving public document:', error)
+    return { error: error.message || 'Dokumen gagal disimpan.' }
+  }
+}
+
+export async function deletePublicDocumentItemAction(websiteId, moduleSlug, documentId) {
+  try {
+    const session = await getSession()
+    if (!session) return { error: 'Sesi berakhir. Silakan masuk kembali.' }
+    if (!PUBLIC_DOCUMENT_EDITOR_MODULES.has(moduleSlug)) return { error: 'Modul dokumen tidak dikenali.' }
+    await authorizeWebsite(websiteId, session)
+    const { menuItemId, row } = await getPublicDocumentContent(websiteId, moduleSlug)
+    const metadata = publicDocumentMetadata(row?.metadata)
+    const documents = Array.isArray(metadata.public_documents) ? metadata.public_documents : []
+    const document = documents.find((item) => item.id === documentId)
+    if (!document) return { error: 'Dokumen tidak ditemukan.' }
+    metadata.public_documents = documents.filter((item) => item.id !== documentId)
+    await query('UPDATE contents SET metadata = $3::jsonb, updated_at = NOW() WHERE website_id = $1 AND menu_item_id = $2', [websiteId, menuItemId, JSON.stringify(metadata)])
+    if (document.attachment?.url) await removePortalFile(document.attachment.url).catch((error) => console.warn('Could not remove deleted public document:', error.message))
+    const website = await query('SELECT subdomain FROM websites WHERE id = $1 LIMIT 1', [websiteId])
+    revalidatePath(`/admin/network/${websiteId}/content/${moduleSlug}`)
+    if (website.rows[0]?.subdomain) revalidatePath(`/${website.rows[0].subdomain}/ppid`)
+    return { success: true }
+  } catch (error) {
+    console.error('Error deleting public document:', error)
+    return { error: error.message || 'Dokumen gagal dihapus.' }
+  }
+}
