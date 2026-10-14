@@ -2,13 +2,23 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import CreateWebsiteModal from './CreateWebsiteModal'
 
 export default function NetworkHeader({ templates }) {
+  const router = useRouter()
   const [isModalOpen, setIsModalOpen] = useState(false)
+  const [toast, setToast] = useState(null)
+
+  function handleDeploySuccess(message) {
+    setToast(message)
+    window.setTimeout(() => setToast(null), 5000)
+    router.refresh()
+  }
 
   return (
     <>
+      {toast && <div role="status" className="fixed right-5 top-5 z-[9999] flex max-w-sm items-start gap-3 rounded-xl border border-slate-800 bg-slate-900 px-4 py-3.5 text-sm text-white shadow-xl"><span className="mt-0.5 text-emerald-400" aria-hidden="true">✓</span><div className="min-w-0 flex-1"><p className="font-semibold">Berhasil</p><p className="mt-0.5 text-xs leading-snug text-slate-300">{toast}</p></div><button type="button" onClick={() => setToast(null)} aria-label="Tutup notifikasi" className="text-slate-400 hover:text-white">×</button></div>}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">
@@ -48,6 +58,7 @@ export default function NetworkHeader({ templates }) {
       <CreateWebsiteModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
+        onSuccess={handleDeploySuccess}
         templates={templates}
       />
     </>

@@ -8,9 +8,9 @@ export async function generateMetadata({ params }) {
   const { subdomain } = await params
   try {
     const website = await getKecamatanWebsite(subdomain)
-    return website ? { title: `${website.name} — Portal Kecamatan`, description: `Portal resmi ${website.name}, Pemerintah Kota Bandung.` } : { title: 'Portal tidak ditemukan' }
+    return website ? { title: `${website.name} — Portal Resmi`, description: `Portal resmi ${website.name}, Pemerintah Kota Bandung.` } : { title: 'Portal tidak ditemukan' }
   } catch {
-    return { title: 'Portal Kecamatan — Pemerintah Kota Bandung' }
+    return { title: 'Portal Resmi — Pemerintah Kota Bandung' }
   }
 }
 

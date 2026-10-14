@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useMemo } from 'react'
-import Link from 'next/link'
 
 // Helper icon & subtitle per slug template
 function getTemplateMeta(slug) {
@@ -95,13 +94,12 @@ export default function TemplatesTable({ templates }) {
               <th className="py-3.5 px-6">Deskripsi Ringkas</th>
               <th className="py-3.5 px-6">Website Pengguna</th>
               <th className="py-3.5 px-6">Status</th>
-              <th className="py-3.5 px-6 text-right">Aksi</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100 text-xs">
             {filtered.length === 0 ? (
               <tr>
-                <td colSpan={6} className="py-12 text-center text-slate-500">
+                <td colSpan={5} className="py-12 text-center text-slate-500">
                   <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 mx-auto mb-3">
                     <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -176,18 +174,6 @@ export default function TemplatesTable({ templates }) {
                       )}
                     </td>
 
-                    {/* 6. Aksi */}
-                    <td className="py-4 px-6 text-right">
-                      <Link
-                        href={`/admin/templates/${t.id}/edit`}
-                        className="px-3 py-1.5 bg-white border border-slate-200 text-slate-700 hover:text-blue-700 hover:border-blue-300 hover:bg-blue-50/50 rounded-lg text-xs font-semibold shadow-2xs transition inline-flex items-center gap-1.5 cursor-pointer"
-                      >
-                        <svg className="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                        </svg>
-                        <span>Edit</span>
-                      </Link>
-                    </td>
                   </tr>
                 )
               })

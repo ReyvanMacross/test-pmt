@@ -76,7 +76,7 @@ export default function PublicKecamatanHome({ portal }) {
   ].filter(([, value]) => value !== null && value !== undefined && String(value).trim() !== '')
   const hasProfile = isModuleEnabled('profil') && Boolean(profileSummary || profile?.misi || stats.length)
 
-  return <div className="public-portal min-h-screen bg-white text-slate-900"><PortalHeader website={website} profile={profile} moduleVisibility={portal.moduleVisibility}/>
+  return <div className="public-portal min-h-screen bg-white text-slate-900" data-portal-template={website.template_slug || 'kecamatan'}><PortalHeader website={website} profile={profile} moduleVisibility={portal.moduleVisibility}/>
     {isModuleEnabled('hero-slider') && heroSlides.length > 0 && <HeroSlider slides={heroSlides} website={website} base={base} moduleVisibility={portal.moduleVisibility}/>}
 
     {isModuleEnabled('beranda') && hasIntroduction && <section className="border-b border-slate-100 bg-white px-5 py-10 text-center sm:py-12 lg:px-10"><div className="mx-auto max-w-3xl"><span className="inline-flex rounded-md bg-teal-50 px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-[.15em] text-teal-700">Integritas & Transparansi</span>{introductionTitle && <h2 className="mt-3 text-xl font-extrabold tracking-tight text-slate-900 sm:text-2xl">{introductionTitle}</h2>}{introductionBody && <p className="mx-auto mt-3 whitespace-pre-line text-sm leading-relaxed text-slate-600">{introductionBody}</p>}</div></section>}

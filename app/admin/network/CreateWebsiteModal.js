@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { createWebsiteAction } from './actions'
 
-export default function CreateWebsiteModal({ isOpen, onClose, templates }) {
+export default function CreateWebsiteModal({ isOpen, onClose, onSuccess, templates }) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
   const [name, setName] = useState('')
@@ -52,17 +52,21 @@ export default function CreateWebsiteModal({ isOpen, onClose, templates }) {
     // Pastikan template_id terpilih
     formData.set('template_id', selectedTemplateId)
 
-    const res = await createWebsiteAction(formData)
+    try {
+      const res = await createWebsiteAction(formData)
+      if (res?.error) {
+        setError(res.error)
+        return
+      }
 
-    if (res?.error) {
-      setError(res.error)
-      setLoading(false)
-    } else {
-      // Sukses: tutup modal dan reset form
-      setLoading(false)
       setName('')
       setSubdomain('')
       onClose()
+      onSuccess?.(res.message || `${name} berhasil ditambahkan ke Kelola Website.`)
+    } catch (err) {
+      setError(err?.message || 'Deploy website gagal. Silakan coba lagi.')
+    } finally {
+      setLoading(false)
     }
   }
 

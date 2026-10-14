@@ -22,9 +22,9 @@ export default function MobilePortalMenu({ website, links, infoLinks = [], showC
     <button type="button" onClick={() => setOpen(true)} aria-label="Buka menu navigasi" aria-expanded={open} className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-white/20 bg-white/5 text-white transition hover:bg-white/10 sm:h-11 sm:w-11">
       <Menu className="h-5 w-5"/>
     </button>
-    {open && typeof document !== 'undefined' && createPortal(<div className="fixed inset-0 z-[1000] text-white">
+    {open && typeof document !== 'undefined' && createPortal(<div className="fixed inset-0 z-[1000] text-white" data-portal-template={website.template_slug || 'kecamatan'}>
       <button type="button" aria-label="Tutup menu" onClick={() => setOpen(false)} className="fixed inset-0 bg-slate-950/70"/>
-      <aside aria-label="Navigasi portal" className="fixed inset-y-0 right-0 z-10 flex w-[min(88vw,22rem)] flex-col border-l border-white/10 p-5 text-white shadow-2xl" style={{ backgroundColor: '#06141D', opacity: 1 }}>
+      <aside aria-label="Navigasi portal" className="fixed inset-y-0 right-0 z-10 flex w-[min(88vw,22rem)] flex-col border-l border-white/10 p-5 text-white shadow-2xl" style={{ backgroundColor: 'var(--portal-dark, #06141D)', opacity: 1 }}>
         <div className="flex shrink-0 items-center justify-between border-b border-white/10 pb-5">
           <Link href={base} onClick={() => setOpen(false)} className="flex min-w-0 items-center gap-3">
             <Image src="/images/logo_bdg_putih.png" alt="" width={32} height={40} className="h-9 w-7 shrink-0 object-contain"/>

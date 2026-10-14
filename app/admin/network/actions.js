@@ -61,6 +61,7 @@ export async function createWebsiteAction(formData) {
     return { error: 'Subdomain hanya boleh huruf kecil, angka, dan tanda hubung (-)' }
   }
 
+  let newWebsite
   try {
     // Cek keunikan subdomain
     const checkSubdomain = await query(
@@ -79,7 +80,7 @@ export async function createWebsiteAction(formData) {
       [session.id, name, subdomain, template_id, description]
     )
 
-    const newWebsite = res.rows[0]
+    newWebsite = res.rows[0]
 
     // Buat profil wilayah kosong otomatis jika templatenya kecamatan/kelurahan
     const tplRes = await query('SELECT slug FROM templates WHERE id = $1', [template_id])
@@ -104,7 +105,7 @@ export async function createWebsiteAction(formData) {
   }
 
   revalidatePath('/admin/network')
-  redirect('/admin/network')
+  return { success: true, website: newWebsite, message: `${name} berhasil ditambahkan ke Kelola Website.` }
 }
 
 // ─── 2. UPDATE WEBSITE ACTION ────────────────────────────────────────────────

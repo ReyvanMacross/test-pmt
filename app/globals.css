@@ -25,6 +25,40 @@ body {
   font-family: Arial, Helvetica, sans-serif;
 }
 
+/* Keep admin success and error notifications consistent with the dark toast design. */
+body [role="status"].fixed,
+body [role="alert"].fixed,
+body .fixed.top-5.right-5,
+body .fixed.top-20.right-5,
+body .fixed.top-20.right-4 {
+  position: fixed !important;
+  top: 1.125rem !important;
+  right: 1.5rem !important;
+  z-index: 9999 !important;
+  max-width: min(24rem, calc(100vw - 2rem));
+  border: 1px solid #1e293b !important;
+  border-radius: 0.75rem !important;
+  background: #0f172a !important;
+  color: #f8fafc !important;
+  box-shadow: 0 16px 40px rgb(15 23 42 / 25%) !important;
+}
+
+body [role="status"].fixed > :where(span, p, strong, div),
+body [role="alert"].fixed > :where(span, p, strong, div),
+body .fixed.top-5.right-5 > :where(span, p, strong, div),
+body .fixed.top-20.right-5 > :where(span, p, strong, div),
+body .fixed.top-20.right-4 > :where(span, p, strong, div) {
+  color: inherit;
+}
+
+body [role="status"].fixed > :where(div, p) p:last-child,
+body [role="alert"].fixed > :where(div, p) p:last-child,
+body .fixed.top-5.right-5 > :where(div, p) p:last-child,
+body .fixed.top-20.right-5 > :where(div, p) p:last-child,
+body .fixed.top-20.right-4 > :where(div, p) p:last-child {
+  color: #cbd5e1 !important;
+}
+
 /* Keep secondary labels readable across the public portal template. */
 .public-portal [class~="text-xs"] {
   font-size: 0.875rem;
@@ -53,3 +87,97 @@ body {
 .public-portal video {
   max-width: 100%;
 }
+
+/* Dinas and Kelurahan use the same public modules; only their design tokens differ. */
+[data-portal-template="dinas"] {
+  --portal-ink: #0f172a;
+  --portal-dark: #0a192f;
+  --portal-accent: #0284c7;
+  --portal-accent-hover: #0ea5e9;
+  --portal-accent-soft: #e0f2fe;
+  --portal-accent-badge: #f0f9ff;
+  --portal-accent-text: #0369a1;
+  --portal-accent-on-dark: #7dd3fc;
+  --portal-page: #f8fafc;
+  background-color: var(--portal-page);
+  color: var(--portal-ink);
+}
+
+[data-portal-template="kelurahan"] {
+  --portal-ink: #1c1917;
+  --portal-dark: #18181b;
+  --portal-accent: #d97706;
+  --portal-accent-hover: #f59e0b;
+  --portal-accent-soft: #fef3c7;
+  --portal-accent-badge: #fffbeb;
+  --portal-accent-text: #92400e;
+  --portal-accent-on-dark: #fcd34d;
+  --portal-page: #fafafa;
+  background-color: var(--portal-page);
+  color: var(--portal-ink);
+}
+
+[data-portal-template="dinas"],
+[data-portal-template="kelurahan"] {
+  --portal-accent-rgb: 2, 132, 199;
+}
+
+[data-portal-template="kelurahan"] { --portal-accent-rgb: 217, 119, 6; }
+
+/* Shared teal accents are mapped to each portal palette without changing module behavior. */
+[data-portal-template="dinas"] :is([class~="text-teal-700"], [class~="text-teal-800"], [class~="text-teal-900"], [class~="text-teal-600"], [class~="text-teal-500"]),
+[data-portal-template="kelurahan"] :is([class~="text-teal-700"], [class~="text-teal-800"], [class~="text-teal-900"], [class~="text-teal-600"], [class~="text-teal-500"]) { color: var(--portal-accent-text) !important; }
+
+[data-portal-template="dinas"] :is([class~="text-teal-100"], [class~="text-teal-200"], [class~="text-teal-300"], [class~="text-teal-400"]),
+[data-portal-template="kelurahan"] :is([class~="text-teal-100"], [class~="text-teal-200"], [class~="text-teal-300"], [class~="text-teal-400"]) { color: var(--portal-accent-on-dark) !important; }
+
+[data-portal-template="dinas"] :is([class~="bg-teal-50"], [class~="bg-teal-100"]),
+[data-portal-template="kelurahan"] :is([class~="bg-teal-50"], [class~="bg-teal-100"]) { background-color: var(--portal-accent-badge) !important; }
+[data-portal-template="dinas"] :is([class~="bg-teal-200"], [class~="bg-teal-300"], [class~="bg-teal-400"], [class~="bg-teal-500"], [class~="bg-teal-600"], [class~="bg-teal-700"], [class~="bg-teal-800"], [class~="bg-teal-900"]),
+[data-portal-template="kelurahan"] :is([class~="bg-teal-200"], [class~="bg-teal-300"], [class~="bg-teal-400"], [class~="bg-teal-500"], [class~="bg-teal-600"], [class~="bg-teal-700"], [class~="bg-teal-800"], [class~="bg-teal-900"]) { background-color: var(--portal-accent) !important; }
+
+[data-portal-template="dinas"] :is([class~="border-teal-100"], [class~="border-teal-200"], [class~="border-teal-300"], [class~="border-teal-400"], [class~="border-teal-500"], [class~="border-teal-600"], [class~="border-teal-700"], [class~="border-teal-800"]),
+[data-portal-template="kelurahan"] :is([class~="border-teal-100"], [class~="border-teal-200"], [class~="border-teal-300"], [class~="border-teal-400"], [class~="border-teal-500"], [class~="border-teal-600"], [class~="border-teal-700"], [class~="border-teal-800"]) { border-color: color-mix(in srgb, var(--portal-accent) 35%, transparent) !important; }
+
+[data-portal-template="dinas"] :is([class~="bg-amber-50"], [class~="bg-amber-100"]) { background-color: var(--portal-accent-badge) !important; }
+[data-portal-template="dinas"] :is([class~="bg-amber-300"], [class~="bg-amber-400"], [class~="bg-amber-500"], [class~="bg-amber-600"]) { background-color: var(--portal-accent) !important; color: white !important; }
+[data-portal-template="dinas"] :is([class~="text-amber-100"], [class~="text-amber-200"], [class~="text-amber-300"], [class~="text-amber-400"]) { color: var(--portal-accent-on-dark) !important; }
+[data-portal-template="dinas"] :is([class~="text-amber-500"], [class~="text-amber-600"], [class~="text-amber-700"], [class~="text-amber-800"]) { color: var(--portal-accent-text) !important; }
+[data-portal-template="dinas"] :is([class~="border-amber-100"], [class~="border-amber-200"], [class~="border-amber-300"], [class~="border-amber-400"]) { border-color: color-mix(in srgb, var(--portal-accent) 35%, transparent) !important; }
+
+[data-portal-template="kelurahan"] :is([class~="text-amber-500"], [class~="text-amber-600"], [class~="text-amber-700"], [class~="text-amber-800"]) { color: var(--portal-accent-text) !important; }
+[data-portal-template="kelurahan"] :is([class~="bg-amber-300"], [class~="bg-amber-400"], [class~="bg-amber-500"], [class~="bg-amber-600"]) { background-color: var(--portal-accent) !important; color: white !important; }
+[data-portal-template="kelurahan"] :is([class~="hover:bg-amber-300"]:hover, [class~="hover:bg-amber-400"]:hover) { background-color: var(--portal-accent-hover) !important; }
+[data-portal-template="kelurahan"] :is([class~="border-amber-100"], [class~="border-amber-200"], [class~="border-amber-300"], [class~="border-amber-400"]) { border-color: color-mix(in srgb, var(--portal-accent) 30%, transparent) !important; }
+
+/* Dark hero, navigation, and footer surfaces adapt to the selected template. */
+[data-portal-template="dinas"] :is([class*="bg-[#06141D]"], [class*="bg-[#061820]"], [class*="bg-[#07141D]"], [class*="bg-[#071820]"], [class*="bg-[#071923]"], [class*="bg-[#08151d]"], [class*="bg-[#02090e]"], [class*="bg-[#092b32]"]),
+[data-portal-template="kelurahan"] :is([class*="bg-[#06141D]"], [class*="bg-[#061820]"], [class*="bg-[#07141D]"], [class*="bg-[#071820]"], [class*="bg-[#071923]"], [class*="bg-[#08151d]"], [class*="bg-[#02090e]"], [class*="bg-[#092b32]"]) { background-color: var(--portal-dark) !important; }
+
+[data-portal-template="dinas"] :is([class*="from-[#"], [class*="via-[#"], [class*="to-[#"]),
+[data-portal-template="kelurahan"] :is([class*="from-[#"], [class*="via-[#"], [class*="to-[#"]) { background-image: linear-gradient(135deg, var(--portal-dark), color-mix(in srgb, var(--portal-accent) 32%, var(--portal-dark))) !important; }
+
+[data-portal-template="dinas"] [class~="bg-slate-50"],
+[data-portal-template="kelurahan"] [class~="bg-slate-50"] { background-color: var(--portal-page) !important; }
+[data-portal-template="dinas"] [class~="bg-teal-400/10"],
+[data-portal-template="dinas"] [class~="bg-teal-500/15"],
+[data-portal-template="kelurahan"] [class~="bg-teal-400/10"],
+[data-portal-template="kelurahan"] [class~="bg-teal-500/15"] { background-color: color-mix(in srgb, var(--portal-accent) 18%, transparent) !important; }
+
+[data-portal-template="dinas"] [class~="bg-amber-400/15"],
+[data-portal-template="dinas"] [class~="bg-amber-300/15"] { background-color: color-mix(in srgb, var(--portal-accent) 18%, transparent) !important; }
+
+[data-portal-template="dinas"] :is([class~="hover:bg-teal-500"]:hover, [class~="hover:bg-teal-600"]:hover),
+[data-portal-template="kelurahan"] :is([class~="hover:bg-teal-500"]:hover, [class~="hover:bg-teal-600"]:hover) { background-color: var(--portal-accent-hover) !important; }
+[data-portal-template="dinas"] :is([class~="hover:bg-amber-300"]:hover, [class~="hover:bg-amber-400"]:hover) { background-color: var(--portal-accent-hover) !important; color: white !important; }
+
+[data-portal-template="dinas"] :is([class~="text-blue-600"], [class~="text-blue-700"], [class~="text-blue-800"]),
+[data-portal-template="kelurahan"] :is([class~="text-blue-600"], [class~="text-blue-700"], [class~="text-blue-800"]) { color: var(--portal-accent-text) !important; }
+[data-portal-template="dinas"] :is([class~="bg-blue-50"], [class~="bg-sky-50"]),
+[data-portal-template="kelurahan"] :is([class~="bg-blue-50"], [class~="bg-sky-50"]) { background-color: var(--portal-accent-badge) !important; }
+[data-portal-template="dinas"] :is([class~="bg-blue-600"], [class~="bg-blue-700"]),
+[data-portal-template="kelurahan"] :is([class~="bg-blue-600"], [class~="bg-blue-700"]) { background-color: var(--portal-accent) !important; color: white !important; }
+[data-portal-template="dinas"] :is([class~="border-blue-200"], [class~="border-blue-300"], [class~="border-sky-200"]),
+[data-portal-template="kelurahan"] :is([class~="border-blue-200"], [class~="border-blue-300"], [class~="border-sky-200"]) { border-color: color-mix(in srgb, var(--portal-accent) 35%, transparent) !important; }
+[data-portal-template="dinas"] [class~="hover:bg-blue-700"]:hover,
+[data-portal-template="kelurahan"] [class~="hover:bg-blue-700"]:hover { background-color: var(--portal-accent-hover) !important; }

@@ -29,7 +29,7 @@ export default async function PublicNewsArticlePage({ params }) {
   const upcomingAgendas = portal.agendas.filter((item) => new Date(item.start_date) >= new Date(new Date().toDateString())).slice(0, 3)
   const paragraphs = String(article.body).split(/\r?\n\s*\r?\n/).map((part) => part.trim()).filter(Boolean)
 
-  return <div className="public-portal min-h-screen bg-slate-50 text-slate-900">
+  return <div className="public-portal min-h-screen bg-slate-50 text-slate-900" data-portal-template={portal.website.template_slug || 'kecamatan'}>
     <PortalHeader website={portal.website} profile={portal.profile} moduleVisibility={portal.moduleVisibility}/>
     <header className="relative overflow-hidden border-b border-white/10 bg-[#06141D] px-5 py-10 text-white sm:py-14 lg:py-16">
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(13,148,136,0.4),transparent_65%)]"/>
