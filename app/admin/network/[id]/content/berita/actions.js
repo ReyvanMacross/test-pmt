@@ -8,6 +8,8 @@ import { revalidatePath } from 'next/cache'
 import { getSession } from '@/lib/auth'
 import { getCurrentAdminAccess, hasAdminPermission } from '@/lib/admin-access'
 import { query } from '@/lib/db'
+import { uploadPortalFile, removePortalFile } from '@/lib/storage'
+import { randomUUID } from 'node:crypto'
 
 function isPrivateAddress(address) {
   if (isIP(address) === 4) {
@@ -144,6 +146,58 @@ function revalidateNewsPaths(websiteId) {
   revalidatePath(`/admin/network/${websiteId}/content/berita`)
   revalidatePath(`/admin/network/${websiteId}/content/berita/[newsId]/edit`, 'page')
   revalidatePath('/admin/dashboard')
+  revalidatePath('/[subdomain]/berita', 'page')
+  revalidatePath('/[subdomain]/berita/[newsId]', 'page')
+  revalidatePath('/[subdomain]', 'page')
+}
+
+export async function createNewsArticleAction(websiteId, formData) {
+  let uploadedImage = null
+  try {
+    const { session, website } = await authorizeWebsite(websiteId)
+    const title = String(formData.get('title') || '').trim()
+    const category = String(formData.get('category') || '').trim() || 'Kabar Wilayah'
+    const excerpt = String(formData.get('excerpt') || '').trim()
+    const body = String(formData.get('body') || '').trim()
+    const imageMode = String(formData.get('image_mode') || 'url')
+    const imageUrl = String(formData.get('image') || '').trim()
+    const author = String(formData.get('author') || '').trim()
+    const published = formData.get('is_published') === 'true'
+    if (!title || !body) return { error: 'Judul dan isi berita wajib diisi.' }
+    if (title.length > 500 || category.length > 120 || excerpt.length > 5000 || body.length > 100000) {
+      return { error: 'Ada isian yang melebihi batas karakter.' }
+    }
+    if (author.length > 255) return { error: 'Nama author maksimal 255 karakter.' }
+    if (!['url', 'upload'].includes(imageMode)) return { error: 'Pilihan sumber gambar tidak valid.' }
+    let image = imageUrl || null
+    if (imageMode === 'url' && image) await validatePublicUrl(image)
+    if (imageMode === 'upload') {
+      const file = formData.get('image_file')
+      if (!file || typeof file.size !== 'number' || !file.size) return { error: 'Pilih gambar yang akan diunggah.' }
+      const allowed = new Map([['image/jpeg', 'jpg'], ['image/png', 'png'], ['image/webp', 'webp'], ['image/gif', 'gif']])
+      if (!allowed.has(file.type)) return { error: 'Format gambar harus JPG, PNG, WebP, atau GIF.' }
+      if (file.size > 5 * 1024 * 1024) return { error: 'Ukuran gambar maksimal 5 MB.' }
+      uploadedImage = await uploadPortalFile({ file, objectPath: `websites/${website.id}/news/${randomUUID()}.${allowed.get(file.type)}` })
+      image = uploadedImage.publicUrl
+    }
+    const inserted = await query(
+      `INSERT INTO news_items (website_id, url, title, author, image, excerpt, source_domain, body, category, is_published, published_at, created_at, updated_at)
+       VALUES ($1, NULL, $2, $3, $4, $5, NULL, $6, $7, $8, CASE WHEN $8 THEN NOW() ELSE NULL END, NOW(), NOW())
+       RETURNING id, website_id, url, title, author, image, excerpt, source_domain, body, category, is_published, published_at, created_at, updated_at`,
+      [website.id, title, author || session.name || session.email || website.name, image, excerpt || null, body, category, published]
+    )
+    uploadedImage = null
+    await query(
+      'INSERT INTO activity_logs (user_id, website_id, action, description) VALUES ($1, $2, $3, $4)',
+      [session.id, website.id, 'create_news_article', `${website.name}: membuat berita "${title}" (${published ? 'terbit' : 'draf'}).`]
+    )
+    revalidateNewsPaths(website.id)
+    return { success: true, newsItem: inserted.rows[0], message: published ? 'Berita berhasil diterbitkan.' : 'Draf berita berhasil disimpan.' }
+  } catch (error) {
+    if (uploadedImage?.publicUrl) await removePortalFile(uploadedImage.publicUrl).catch(() => {})
+    console.error('Create news article error:', error)
+    return { error: error.message || 'Gagal menyimpan berita.' }
+  }
 }
 
 export async function createNewsLinkAction(websiteId, formData) {
@@ -187,26 +241,47 @@ export async function createNewsLinkAction(websiteId, formData) {
 }
 
 export async function updateNewsLinkAction(websiteId, newsId, formData) {
+  let uploadedImage = null
   try {
     const { session, website } = await authorizeWebsite(websiteId)
-    const url = formData.get('url')?.trim()
-    const title = formData.get('title')?.trim()
-    const author = formData.get('author')?.trim() || null
-    const image = formData.get('image')?.trim() || null
-    const excerpt = formData.get('excerpt')?.trim() || null
+    const url = String(formData.get('url') || '').trim()
+    const title = String(formData.get('title') || '').trim()
+    const author = String(formData.get('author') || '').trim() || null
+    let image = String(formData.get('image') || '').trim() || null
+    const imageMode = String(formData.get('image_mode') || 'url')
+    const excerpt = String(formData.get('excerpt') || '').trim() || null
+    const body = String(formData.get('body') || '').trim() || null
+    const category = String(formData.get('category') || '').trim() || 'Kabar Wilayah'
+    const published = formData.get('is_published') === 'true'
     const autoFetch = formData.get('auto_fetch') === 'true'
-    if (!url || !title) return { error: 'URL dan judul berita wajib diisi.' }
+    if (!title) return { error: 'Judul berita wajib diisi.' }
+    if (title.length > 500 || category.length > 120 || author?.length > 255 || excerpt?.length > 5000 || body?.length > 100000) return { error: 'Ada isian yang melebihi batas karakter.' }
+    if (!body && !url) return { error: 'Isi berita wajib diisi jika tidak menggunakan tautan sumber luar.' }
 
-    const parsedUrl = await validatePublicUrl(url)
-    if (image) await validatePublicUrl(image)
-    let values = { title, author, image, excerpt, sourceDomain: parsedUrl.hostname }
+    const parsedUrl = url ? await validatePublicUrl(url) : null
+    const previousResult = await query('SELECT image FROM news_items WHERE id = $1 AND website_id = $2 LIMIT 1', [newsId, website.id])
+    if (!previousResult.rows[0]) return { error: 'Berita tidak ditemukan pada website ini.' }
+    const previousImage = previousResult.rows[0].image
+    if (!['url', 'upload'].includes(imageMode)) return { error: 'Pilihan sumber gambar tidak valid.' }
+    if (imageMode === 'url' && image) await validatePublicUrl(image)
+    if (imageMode === 'upload') {
+      const file = formData.get('image_file')
+      if (!file || typeof file.size !== 'number' || !file.size) return { error: 'Pilih gambar yang akan diunggah.' }
+      const allowed = new Map([['image/jpeg', 'jpg'], ['image/png', 'png'], ['image/webp', 'webp'], ['image/gif', 'gif']])
+      if (!allowed.has(file.type)) return { error: 'Format gambar harus JPG, PNG, WebP, atau GIF.' }
+      if (file.size > 5 * 1024 * 1024) return { error: 'Ukuran gambar maksimal 5 MB.' }
+      uploadedImage = await uploadPortalFile({ file, objectPath: `websites/${website.id}/news/${randomUUID()}.${allowed.get(file.type)}` })
+      image = uploadedImage.publicUrl
+    }
+    if (autoFetch && !url) return { error: 'URL diperlukan untuk mengambil ulang metadata.' }
+    let values = { title, author, image, excerpt, sourceDomain: parsedUrl?.hostname || null }
     if (autoFetch) {
       try {
         const metadata = await fetchNewsMetadata(url)
         values = {
           title: metadata.title || title,
           author: metadata.author || author,
-          image: metadata.image || image,
+          image: imageMode === 'upload' ? image : metadata.image || image,
           excerpt: metadata.excerpt || excerpt,
           sourceDomain: metadata.sourceDomain,
         }
@@ -216,11 +291,19 @@ export async function updateNewsLinkAction(websiteId, newsId, formData) {
     }
 
     const updated = await query(
-      `UPDATE news_items SET url = $1, title = $2, author = $3, image = $4, excerpt = $5, source_domain = $6, updated_at = NOW()
-       WHERE id = $7 AND website_id = $8 RETURNING id, title`,
-      [url, values.title, values.author, values.image, values.excerpt, values.sourceDomain, newsId, website.id]
+      `UPDATE news_items SET url = $1, title = $2, author = $3, image = $4, excerpt = $5, source_domain = $6,
+         body = $7, category = $8, is_published = $9,
+         published_at = CASE WHEN $9 THEN COALESCE(published_at, NOW()) ELSE NULL END, updated_at = NOW()
+       WHERE id = $10 AND website_id = $11 RETURNING id, title`,
+      [url || null, values.title, values.author, values.image, values.excerpt, values.sourceDomain, body, category, published, newsId, website.id]
     )
-    if (!updated.rows[0]) return { error: 'Link berita tidak ditemukan pada website ini.' }
+    if (!updated.rows[0]) {
+      if (uploadedImage?.publicUrl) await removePortalFile(uploadedImage.publicUrl).catch(() => {})
+      uploadedImage = null
+      return { error: 'Berita tidak ditemukan pada website ini.' }
+    }
+    uploadedImage = null
+    if (previousImage && previousImage !== values.image) await removePortalFile(previousImage).catch(() => {})
     await query(
       'INSERT INTO activity_logs (user_id, website_id, action, description) VALUES ($1, $2, $3, $4)',
       [session.id, website.id, 'update_news_link', `${website.name}: memperbarui link berita "${updated.rows[0].title}".`]
@@ -228,6 +311,7 @@ export async function updateNewsLinkAction(websiteId, newsId, formData) {
     revalidateNewsPaths(website.id)
     return { success: true, message: 'Perubahan link berita berhasil disimpan.' }
   } catch (error) {
+    if (uploadedImage?.publicUrl) await removePortalFile(uploadedImage.publicUrl).catch(() => {})
     console.error('Update news link error:', error)
     return { error: error.message || 'Gagal memperbarui link berita.' }
   }

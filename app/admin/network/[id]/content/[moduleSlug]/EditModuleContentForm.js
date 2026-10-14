@@ -152,6 +152,7 @@ export default function EditModuleContentForm({ website, moduleMeta, initialCont
     null
 
   const [title, setTitle] = useState(initialTitle)
+  const [externalPortalUrl, setExternalPortalUrl] = useState(initialContent.metadata?.external_url || '')
   const [pangkatGolongan, setPangkatGolongan] = useState(initialContent.metadata?.pangkat_golongan || '')
   const [leadershipQuote, setLeadershipQuote] = useState(initialContent.metadata?.sambutan_quote || '')
   const [organizationMode, setOrganizationMode] = useState(initialContent.metadata?.organization_mode === 'builder' ? 'builder' : 'image')
@@ -256,6 +257,7 @@ export default function EditModuleContentForm({ website, moduleMeta, initialCont
 
   function handleReset() {
     setTitle(initialTitle)
+    setExternalPortalUrl(initialContent.metadata?.external_url || '')
     setPangkatGolongan(initialContent.metadata?.pangkat_golongan || '')
     setLeadershipQuote(initialContent.metadata?.sambutan_quote || '')
     setOrganizationMode(initialContent.metadata?.organization_mode === 'builder' ? 'builder' : 'image')
@@ -280,6 +282,7 @@ export default function EditModuleContentForm({ website, moduleMeta, initialCont
     try {
       const fd = new FormData()
       fd.set('title', title)
+      if (moduleMeta.slug === 'ppid-utama') fd.set('external_url', externalPortalUrl)
       if (moduleMeta.slug === 'profil-pimpinan') fd.set('pangkat_golongan', pangkatGolongan)
       if (moduleMeta.slug === 'profil-pimpinan') fd.set('sambutan_quote', leadershipQuote)
       if (moduleMeta.slug === 'struktur-organisasi') {
@@ -460,6 +463,12 @@ export default function EditModuleContentForm({ website, moduleMeta, initialCont
               </select>
             </div>}
           </div>
+
+          {moduleMeta.slug === 'ppid-utama' && <div className="rounded-xl border border-violet-100 bg-violet-50/60 p-4">
+            <label className="mb-2 block text-sm font-semibold text-slate-700" htmlFor="ppid-external-url">Tautan Portal PPID Utama Kota Bandung</label>
+            <input id="ppid-external-url" type="url" maxLength={2000} value={externalPortalUrl} onChange={(event) => setExternalPortalUrl(event.target.value)} placeholder="https://ppid.bandung.go.id/" className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-violet-500 focus:ring-2 focus:ring-violet-500/15"/>
+            <p className="mt-1.5 text-xs text-slate-500">Jika diisi, tautan ini ditampilkan sebagai tombol menuju portal eksternal pada halaman dokumen publik.</p>
+          </div>}
 
           {moduleMeta.slug === 'struktur-organisasi' && <section className="space-y-4 rounded-xl border border-slate-200 bg-slate-50/70 p-4 sm:p-5">
             <div><h3 className="text-sm font-bold text-slate-800">Tampilan Struktur Organisasi</h3><p className="mt-1 text-xs text-slate-500">Pilih unggah bagan yang sudah jadi atau susun bagan dari daftar jabatan.</p></div>

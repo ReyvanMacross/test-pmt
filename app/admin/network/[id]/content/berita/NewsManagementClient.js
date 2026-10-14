@@ -1,12 +1,12 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, ExternalLink, Newspaper, Plus, Search, Trash2, Pencil, X } from 'lucide-react'
+import { ArrowLeft, ExternalLink, Newspaper, Plus, Search, Trash2, Pencil, X, Send } from 'lucide-react'
 import ConfirmModal from '@/app/admin/_components/ConfirmModal'
-import { createNewsLinkAction, deleteNewsLinkAction } from './actions'
+import { createNewsArticleAction, createNewsLinkAction, deleteNewsLinkAction } from './actions'
 
 const PER_PAGE = 8
 
@@ -23,12 +23,24 @@ export default function NewsManagementClient({ website, initialNews }) {
   const router = useRouter()
   const [news, setNews] = useState(initialNews)
   const [url, setUrl] = useState('')
+  const [article, setArticle] = useState({ title: '', category: 'Kabar Wilayah', author: '', excerpt: '', body: '', image: '', isPublished: true })
+  const [imageMode, setImageMode] = useState('url')
+  const [imageFile, setImageFile] = useState(null)
+  const [filePreview, setFilePreview] = useState('')
   const [search, setSearch] = useState('')
   const [page, setPage] = useState(1)
   const [loading, setLoading] = useState(false)
   const [toast, setToast] = useState(null)
   const [deleteItem, setDeleteItem] = useState(null)
   const [deleteLoading, setDeleteLoading] = useState(false)
+
+  useEffect(() => () => { if (filePreview) URL.revokeObjectURL(filePreview) }, [filePreview])
+
+  function chooseImage(file) {
+    if (filePreview) URL.revokeObjectURL(filePreview)
+    setImageFile(file)
+    setFilePreview(file ? URL.createObjectURL(file) : '')
+  }
 
   function notify(type, message) {
     setToast({ type, message })
@@ -59,6 +71,31 @@ export default function NewsManagementClient({ website, initialNews }) {
       }
     } catch (error) {
       notify('error', error.message || 'Terjadi kesalahan saat menambahkan berita.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  async function addArticle(event) {
+    event.preventDefault()
+    setLoading(true)
+    try {
+      const formData = new FormData()
+      for (const [key, value] of Object.entries(article)) formData.set(key === 'isPublished' ? 'is_published' : key, String(value))
+      formData.set('image_mode', imageMode)
+      if (imageFile && imageMode === 'upload') formData.set('image_file', imageFile)
+      const result = await createNewsArticleAction(website.id, formData)
+      if (result?.error) notify('error', result.error)
+      else {
+        setArticle({ title: '', category: 'Kabar Wilayah', author: '', excerpt: '', body: '', image: '', isPublished: true })
+        chooseImage(null)
+        setImageMode('url')
+        if (result.newsItem) setNews((current) => [result.newsItem, ...current])
+        notify('success', result.message)
+        router.refresh()
+      }
+    } catch (error) {
+      notify('error', error.message || 'Terjadi kesalahan saat menerbitkan berita.')
     } finally {
       setLoading(false)
     }
@@ -100,15 +137,21 @@ export default function NewsManagementClient({ website, initialNews }) {
 
       <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-7">
         <div className="mb-5 border-b border-slate-100 pb-4">
-          <h2 className="text-base font-bold text-slate-900">Tambah Link Berita</h2>
-          <p className="mt-1 text-xs text-slate-500">Tempel link berita. Judul, gambar, penulis, dan ringkasan akan dicoba diambil otomatis dari halaman tersebut.</p>
+          <h2 className="text-base font-bold text-slate-900">Tulis Berita Baru</h2>
+          <p className="mt-1 text-xs text-slate-500">Berita yang diterbitkan akan tampil pada arsip wilayah dan memiliki halaman detail di portal.</p>
         </div>
-        <form onSubmit={addNews} className="flex flex-col gap-3 sm:flex-row">
-          <label className="sr-only" htmlFor="news-url">URL berita</label>
-          <input id="news-url" type="url" required value={url} onChange={(event) => setUrl(event.target.value)} placeholder="https://contoh.go.id/berita/..." className="min-w-0 flex-1 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-800 shadow-xs placeholder:text-slate-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20" />
-          <button type="submit" disabled={loading} className="inline-flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700 disabled:cursor-wait disabled:opacity-60">{loading ? <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white" /> : <Plus className="h-4 w-4" />}{loading ? 'Mengambil data…' : 'Tambah Berita'}</button>
+        <form onSubmit={addArticle} className="grid gap-4 md:grid-cols-2">
+          <label className="text-sm font-semibold text-slate-700">Judul berita<input required maxLength={500} value={article.title} onChange={(event) => setArticle((current) => ({ ...current, title: event.target.value }))} placeholder="Contoh: Kecamatan Gelar Musrenbang Tingkat Wilayah" className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm font-normal text-slate-800 focus:border-teal-600 focus:outline-none focus:ring-2 focus:ring-teal-600/15" /></label>
+          <label className="text-sm font-semibold text-slate-700">Kategori<input maxLength={120} value={article.category} onChange={(event) => setArticle((current) => ({ ...current, category: event.target.value }))} placeholder="Kabar Wilayah" className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm font-normal text-slate-800 focus:border-teal-600 focus:outline-none focus:ring-2 focus:ring-teal-600/15" /></label>
+          <label className="text-sm font-semibold text-slate-700 md:col-span-2">Author / Penulis<input maxLength={255} value={article.author} onChange={(event) => setArticle((current) => ({ ...current, author: event.target.value }))} placeholder="Nama penulis atau tim redaksi" className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm font-normal text-slate-800 focus:border-teal-600 focus:outline-none focus:ring-2 focus:ring-teal-600/15" /></label>
+          <label className="text-sm font-semibold text-slate-700 md:col-span-2">Ringkasan<input maxLength={5000} value={article.excerpt} onChange={(event) => setArticle((current) => ({ ...current, excerpt: event.target.value }))} placeholder="Ringkasan singkat untuk kartu berita dan bagian pembuka artikel" className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm font-normal text-slate-800 focus:border-teal-600 focus:outline-none focus:ring-2 focus:ring-teal-600/15" /></label>
+          <label className="text-sm font-semibold text-slate-700 md:col-span-2">Isi berita<textarea required maxLength={100000} rows={8} value={article.body} onChange={(event) => setArticle((current) => ({ ...current, body: event.target.value }))} placeholder="Tulis isi berita di sini. Pisahkan paragraf dengan baris kosong." className="mt-2 w-full rounded-xl border border-slate-200 p-4 text-sm font-normal leading-7 text-slate-800 focus:border-teal-600 focus:outline-none focus:ring-2 focus:ring-teal-600/15" /></label>
+          <div className="space-y-3 md:col-span-2"><span className="block text-sm font-semibold text-slate-700">Gambar utama (opsional)</span><div className="flex flex-wrap gap-2"><button type="button" onClick={() => { setImageMode('url'); chooseImage(null) }} className={`rounded-lg border px-3 py-2 text-xs font-semibold ${imageMode === 'url' ? 'border-teal-600 bg-teal-50 text-teal-800' : 'border-slate-200 text-slate-600'}`}>Pakai link gambar</button><button type="button" onClick={() => { setImageMode('upload'); setArticle((current) => ({ ...current, image: '' })) }} className={`rounded-lg border px-3 py-2 text-xs font-semibold ${imageMode === 'upload' ? 'border-teal-600 bg-teal-50 text-teal-800' : 'border-slate-200 text-slate-600'}`}>Unggah dari perangkat</button></div>{imageMode === 'url' ? <input type="url" value={article.image} onChange={(event) => setArticle((current) => ({ ...current, image: event.target.value }))} placeholder="https://alamat-gambar.jpg" className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm font-normal text-slate-800 focus:border-teal-600 focus:outline-none focus:ring-2 focus:ring-teal-600/15" /> : <label className="flex cursor-pointer flex-col items-center justify-center rounded-xl border border-dashed border-slate-300 bg-slate-50 px-4 py-5 text-center text-sm text-slate-600 hover:border-teal-500"><span className="font-semibold">Pilih gambar JPG, PNG, WebP, atau GIF</span><span className="mt-1 text-xs text-slate-500">Maksimal 5 MB</span><input type="file" accept="image/jpeg,image/png,image/webp,image/gif" onChange={(event) => chooseImage(event.target.files?.[0] || null)} className="sr-only" /></label>}{(filePreview || (imageMode === 'url' && article.image)) && <div className="overflow-hidden rounded-xl border border-slate-200 bg-slate-100"><img src={filePreview || article.image} alt="Pratinjau gambar berita" className="max-h-64 w-full object-contain" /></div>}</div>
+          <div className="flex flex-col gap-3 border-t border-slate-100 pt-4 sm:flex-row sm:items-center sm:justify-between md:col-span-2"><label className="inline-flex items-center gap-2 text-sm text-slate-700"><input type="checkbox" checked={article.isPublished} onChange={(event) => setArticle((current) => ({ ...current, isPublished: event.target.checked }))} className="h-4 w-4 rounded border-slate-300 text-teal-700 focus:ring-teal-600" />Terbitkan sekarang (matikan untuk menyimpan sebagai draf)</label><button type="submit" disabled={loading} className="inline-flex items-center justify-center gap-2 rounded-xl bg-teal-700 px-5 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-teal-800 disabled:opacity-60">{loading ? <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white" /> : <Send className="h-4 w-4" />}{loading ? 'Menyimpan…' : article.isPublished ? 'Terbitkan Berita' : 'Simpan Draf'}</button></div>
         </form>
       </section>
+
+      <details className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6"><summary className="cursor-pointer list-none text-sm font-bold text-slate-700">Impor tautan berita dari sumber luar</summary><p className="mt-2 text-xs text-slate-500">Untuk berita yang tetap dibaca di situs sumber aslinya, tempel tautan di sini.</p><form onSubmit={addNews} className="mt-4 flex flex-col gap-3 sm:flex-row"><label className="sr-only" htmlFor="news-url">URL berita</label><input id="news-url" type="url" required value={url} onChange={(event) => setUrl(event.target.value)} placeholder="https://contoh.go.id/berita/..." className="min-w-0 flex-1 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-800 placeholder:text-slate-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20" /><button type="submit" disabled={loading} className="inline-flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700 disabled:cursor-wait disabled:opacity-60">{loading ? 'Mengambil data…' : <><Plus className="h-4 w-4"/>Tambah Tautan</>}</button></form></details>
 
       <section className="space-y-5 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-7">
         <div className="flex flex-col gap-3 border-b border-slate-100 pb-4 sm:flex-row sm:items-center sm:justify-between">
@@ -121,14 +164,14 @@ export default function NewsManagementClient({ website, initialNews }) {
             <article key={item.id} className="flex flex-col gap-4 rounded-xl border border-slate-200 p-4 transition hover:border-slate-300 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex min-w-0 flex-1 items-center gap-4">
                 <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-lg border border-slate-200 bg-slate-100">{item.image ? <Image src={item.image} alt="" fill unoptimized sizes="80px" className="object-cover" /> : <div className="flex h-full items-center justify-center text-slate-400"><Newspaper className="h-7 w-7" /></div>}</div>
-                <div className="min-w-0"><h3 className="line-clamp-2 text-sm font-bold leading-snug text-slate-800">{item.title || item.url}</h3><div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-slate-500"><a href={item.url} target="_blank" rel="noreferrer" className="max-w-[240px] truncate font-medium text-blue-600 hover:underline">{item.source_domain || hostFromUrl(item.url)}</a><span className="text-slate-300">|</span><span>Diperbarui: {shortDate(item.updated_at)}</span></div></div>
+                <div className="min-w-0"><h3 className="line-clamp-2 text-sm font-bold leading-snug text-slate-800">{item.title || item.url}</h3><div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-slate-500">{item.category && <span className="rounded-full bg-teal-50 px-2 py-0.5 font-semibold text-teal-700">{item.category}</span>}{item.author && <span>Author: {item.author}</span>}<span className={`rounded-full px-2 py-0.5 font-semibold ${item.is_published === false ? 'bg-amber-50 text-amber-700' : 'bg-emerald-50 text-emerald-700'}`}>{item.is_published === false ? 'Draf' : 'Terbit'}</span>{item.source_domain && <><span className="text-slate-300">|</span><a href={item.url || '#'} target="_blank" rel="noreferrer" className="max-w-[240px] truncate font-medium text-blue-600 hover:underline">{item.source_domain || hostFromUrl(item.url)}</a></>}<span className="text-slate-300">|</span><span>Diperbarui: {shortDate(item.updated_at)}</span></div></div>
               </div>
               <div className="flex shrink-0 items-center justify-end gap-2">
                 <Link href={`/admin/network/${website.id}/content/berita/${item.id}/edit`} className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"><Pencil className="h-3.5 w-3.5" />Edit</Link>
                 <button type="button" onClick={() => setDeleteItem(item)} className="inline-flex items-center gap-1.5 rounded-lg border border-rose-200 px-3 py-2 text-xs font-semibold text-rose-600 transition hover:bg-rose-50"><Trash2 className="h-3.5 w-3.5" />Hapus</button>
               </div>
             </article>
-          )) : <div className="flex flex-col items-center gap-2 rounded-xl border border-dashed border-slate-200 py-12 text-center text-sm text-slate-500"><Newspaper className="h-8 w-8 text-slate-300" />{search ? 'Berita tidak ditemukan.' : 'Belum ada link berita. Tambahkan URL berita di atas.'}</div>}
+          )) : <div className="flex flex-col items-center gap-2 rounded-xl border border-dashed border-slate-200 py-12 text-center text-sm text-slate-500"><Newspaper className="h-8 w-8 text-slate-300" />{search ? 'Berita tidak ditemukan.' : 'Belum ada berita. Tulis berita baru atau impor tautan sumber luar.'}</div>}
         </div>
 
         <div className="flex flex-col gap-3 border-t border-slate-100 pt-4 text-xs font-medium text-slate-500 sm:flex-row sm:items-center sm:justify-between">
@@ -137,7 +180,7 @@ export default function NewsManagementClient({ website, initialNews }) {
         </div>
       </section>
 
-      <ConfirmModal isOpen={Boolean(deleteItem)} onClose={() => !deleteLoading && setDeleteItem(null)} onConfirm={confirmDelete} title="Hapus link berita?" message={`Link “${deleteItem?.title || deleteItem?.url || ''}” akan dihapus dari website ini.`} confirmText="Hapus Berita" cancelText="Batal" type="danger" loading={deleteLoading} />
+      <ConfirmModal isOpen={Boolean(deleteItem)} onClose={() => !deleteLoading && setDeleteItem(null)} onConfirm={confirmDelete} title="Hapus berita?" message={`Berita “${deleteItem?.title || deleteItem?.url || ''}” akan dihapus dari website ini.`} confirmText="Hapus Berita" cancelText="Batal" type="danger" loading={deleteLoading} />
     </div>
   )
 }

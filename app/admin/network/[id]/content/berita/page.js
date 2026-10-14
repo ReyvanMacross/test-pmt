@@ -31,7 +31,7 @@ export default async function NewsManagementPage({ params }) {
   }
 
   const result = await query(
-    `SELECT id, website_id, url, title, author, image, excerpt, source_domain, created_at, updated_at
+    `SELECT id, website_id, url, title, author, image, excerpt, source_domain, body, category, is_published, published_at, created_at, updated_at
      FROM news_items WHERE website_id = $1 ORDER BY created_at DESC`,
     [id]
   )

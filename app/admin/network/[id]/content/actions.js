@@ -88,6 +88,20 @@ export async function saveModuleContentAction(websiteId, moduleSlug, formData) {
     const sambutanQuote = moduleSlug === 'profil-pimpinan'
       ? String(formData.get('sambutan_quote') || '').trim().slice(0, 5000)
       : null
+    const externalPortalUrl = moduleSlug === 'ppid-utama'
+      ? String(formData.get('external_url') || '').trim()
+      : null
+    if (moduleSlug === 'ppid-utama' && externalPortalUrl.length > 2000) {
+      return { error: 'Tautan PPID Utama maksimal 2.000 karakter.' }
+    }
+    if (moduleSlug === 'ppid-utama' && externalPortalUrl) {
+      try {
+        const url = new URL(externalPortalUrl)
+        if (url.protocol !== 'https:' || !url.hostname) throw new Error()
+      } catch {
+        return { error: 'Tautan PPID Utama harus berupa alamat HTTPS yang valid.' }
+      }
+    }
     if (moduleSlug === 'profil-pimpinan' && pangkatGolongan && !PNS_RANK_OPTIONS.some(([value]) => value === pangkatGolongan)) {
       return { error: 'Pangkat atau golongan PNS yang dipilih tidak valid.' }
     }
@@ -117,6 +131,7 @@ export async function saveModuleContentAction(websiteId, moduleSlug, formData) {
       metadata.pangkat_golongan = pangkatGolongan || null
       metadata.sambutan_quote = sambutanQuote || null
     }
+    if (moduleSlug === 'ppid-utama') metadata.external_url = externalPortalUrl || null
     if (moduleSlug === 'struktur-organisasi') {
       const organizationMode = String(formData.get('organization_mode') || 'image')
       if (!['image', 'builder'].includes(organizationMode)) {

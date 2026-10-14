@@ -28,7 +28,7 @@ export default async function EditNewsPage({ params }) {
   if (!(await canManageWebsite(session, website.id, website.user_id))) redirect('/admin/network')
 
   const newsResult = await query(
-    `SELECT id, website_id, url, title, author, image, excerpt, source_domain
+    `SELECT id, website_id, url, title, author, image, excerpt, source_domain, body, category, is_published, published_at
      FROM news_items WHERE id = $1 AND website_id = $2 LIMIT 1`,
     [newsId, id]
   )
