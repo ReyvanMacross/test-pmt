@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { CalendarDays, ChevronLeft, ChevronRight, ExternalLink, Play, X } from 'lucide-react'
 
 function formatDate(value) {
@@ -9,16 +9,29 @@ function formatDate(value) {
   return Number.isNaN(date.getTime()) ? '' : new Intl.DateTimeFormat('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }).format(date)
 }
 
-function getEmbedUrl(value) {
+function getYoutubeId(value) {
   try {
     const url = new URL(value)
     const host = url.hostname.toLowerCase().replace(/^www\./, '')
+    const isYoutubeHost = host === 'youtube.com' || host.endsWith('.youtube.com') || host === 'youtube-nocookie.com' || host.endsWith('.youtube-nocookie.com')
     const youtubeId = host === 'youtu.be'
       ? url.pathname.split('/').filter(Boolean)[0]
-      : host.endsWith('youtube.com') || host === 'youtube-nocookie.com'
-        ? url.searchParams.get('v') || url.pathname.match(/\/(?:shorts|embed)\/([^/?]+)/)?.[1]
+      : isYoutubeHost
+        ? url.searchParams.get('v') || url.pathname.match(/\/(?:shorts|embed|live)\/([^/?]+)/)?.[1]
         : null
-    if (youtubeId && /^[\w-]{6,20}$/.test(youtubeId)) return `https://www.youtube-nocookie.com/embed/${youtubeId}?autoplay=1&rel=0`
+    return youtubeId && /^[\w-]{6,20}$/.test(youtubeId) ? youtubeId : null
+  } catch {
+    return null
+  }
+}
+
+function getEmbedUrl(value) {
+  const youtubeId = getYoutubeId(value)
+  if (youtubeId) return `https://www.youtube-nocookie.com/embed/${youtubeId}?autoplay=1&rel=0`
+
+  try {
+    const url = new URL(value)
+    const host = url.hostname.toLowerCase().replace(/^www\./, '')
 
     if (host === 'tiktok.com' || host.endsWith('.tiktok.com')) {
       const id = url.pathname.match(/\/video\/(\d+)/)?.[1]
@@ -36,17 +49,20 @@ function getEmbedUrl(value) {
   return null
 }
 
+function getYoutubeThumbnail(value) {
+  const id = getYoutubeId(value)
+  return id ? `https://img.youtube.com/vi/${id}/hqdefault.jpg` : null
+}
+
 function isExternalVideo(item) {
   return item.type === 'youtube' || (/^https?:\/\//i.test(item.path || '') && !item.path.includes('/storage/v1/object/public/'))
 }
 
-export default function PublicGallery({ albums, type, websiteName }) {
+export default function PublicGallery({ albums, type }) {
   const [selection, setSelection] = useState(null)
   const selectedAlbum = selection ? albums[selection.albumIndex] : null
   const selectedItem = selection ? selectedAlbum?.items?.[selection.itemIndex] : null
   const embedUrl = selectedItem && isExternalVideo(selectedItem) ? getEmbedUrl(selectedItem.path) : null
-  const totalItems = useMemo(() => albums.reduce((sum, album) => sum + (Number(album.item_count) || album.items?.length || 0), 0), [albums])
-
   useEffect(() => {
     if (!selection) return undefined
     const previousOverflow = document.body.style.overflow
@@ -77,20 +93,12 @@ export default function PublicGallery({ albums, type, websiteName }) {
   }
 
   return <div className="space-y-8">
-    <section className="relative isolate overflow-hidden rounded-3xl bg-gradient-to-br from-[#06141D] via-[#0B2538] to-[#0D756A] px-5 py-9 text-white shadow-sm sm:px-8 sm:py-11">
-      <div className="pointer-events-none absolute -right-10 -top-20 h-72 w-72 rounded-full bg-teal-300/10 blur-3xl" />
-      <div className="relative flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
-        <div><span className="inline-flex rounded-full border border-teal-200/20 bg-teal-200/10 px-3 py-1 text-[10px] font-extrabold uppercase tracking-[.18em] text-teal-100">Dokumentasi Wilayah</span><h1 className="mt-3 text-2xl font-black tracking-tight sm:text-3xl">{type === 'image' ? 'Galeri Foto' : 'Galeri Video'} {websiteName}</h1><p className="mt-2 max-w-2xl text-sm leading-relaxed text-slate-200">{type === 'image' ? 'Kumpulan dokumentasi kegiatan dan momen pelayanan masyarakat.' : 'Liputan kegiatan, informasi, dan edukasi dari wilayah.'}</p></div>
-        <div className="flex shrink-0 gap-2"><div className="rounded-xl border border-white/10 bg-white/10 px-4 py-2.5"><p className="text-lg font-extrabold">{albums.length}</p><p className="text-[10px] text-slate-200">Album</p></div><div className="rounded-xl border border-white/10 bg-white/10 px-4 py-2.5"><p className="text-lg font-extrabold">{totalItems}</p><p className="text-[10px] text-slate-200">{type === 'image' ? 'Foto' : 'Video'}</p></div></div>
-      </div>
-    </section>
-
     {albums.length ? albums.map((album, albumIndex) => <section key={album.id} className="space-y-4">
       <div className="flex flex-wrap items-end justify-between gap-3 border-b border-slate-200 pb-3"><div><h2 className="text-lg font-extrabold tracking-tight text-slate-900 sm:text-xl">{album.title}</h2><p className="mt-1 flex items-center gap-1.5 text-xs text-slate-500"><CalendarDays className="h-3.5 w-3.5" />{formatDate(album.album_date)}<span className="px-1 text-slate-300">·</span>{album.items.length} {type === 'image' ? 'foto' : 'video'}</p></div></div>
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {album.items.map((item, itemIndex) => <button key={item.id} type="button" onClick={() => openItem(albumIndex, itemIndex)} aria-label={`Perbesar ${item.name || (type === 'image' ? 'foto' : 'video')}`} className="group min-w-0 overflow-hidden rounded-2xl border border-slate-200 bg-white text-left shadow-sm transition hover:-translate-y-0.5 hover:border-teal-300 hover:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2">
           <span className={`relative block overflow-hidden bg-slate-950 ${type === 'image' ? 'aspect-[4/3]' : 'aspect-video'}`}>
-            {type === 'image' ? <img src={item.path} alt={item.name || ''} loading="lazy" className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.03]" /> : isExternalVideo(item) ? <span className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-slate-900 to-slate-700 text-white"><Play className="h-10 w-10" /></span> : <video src={item.path} preload="metadata" className="h-full w-full object-cover" />}
+            {type === 'image' ? <img src={item.path} alt={item.name || ''} loading="lazy" className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.03]" /> : isExternalVideo(item) ? <><span className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-slate-900 to-slate-700 text-white"><Play className="h-10 w-10" /></span>{getYoutubeThumbnail(item.path) && <img src={getYoutubeThumbnail(item.path)} alt={item.name ? `Thumbnail: ${item.name}` : 'Thumbnail video YouTube'} loading="lazy" onError={(event) => { event.currentTarget.style.display = 'none' }} className="absolute inset-0 h-full w-full object-cover" />}</> : <video src={item.path} preload="metadata" className="h-full w-full object-cover" />}
             {type === 'video' && <span className="absolute inset-0 flex items-center justify-center bg-slate-950/10 transition group-hover:bg-slate-950/30"><span className="flex h-12 w-12 items-center justify-center rounded-full bg-white/95 text-teal-700 shadow-lg"><Play className="ml-0.5 h-5 w-5 fill-current" /></span></span>}
           </span>
           <span className="block p-4"><span className="block truncate text-sm font-bold text-slate-900">{item.name || (type === 'image' ? 'Dokumentasi foto' : 'Dokumentasi video')}</span>{item.description && <span className="mt-1.5 line-clamp-2 block text-xs leading-relaxed text-slate-500">{item.description}</span>}<span className="mt-3 inline-flex items-center gap-1.5 text-[11px] font-bold text-teal-700">{type === 'image' ? 'Lihat foto' : 'Putar video'}<span aria-hidden="true">↗</span></span></span>

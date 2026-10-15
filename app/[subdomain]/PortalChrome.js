@@ -2,8 +2,9 @@ import Link from 'next/link'
 import { Mail, MapPin } from 'lucide-react'
 import MobilePortalMenu from './MobilePortalMenu'
 import DesktopPortalNav from './DesktopPortalNav'
+import OfficialAnnouncementPopup from './OfficialAnnouncementPopup'
 
-export function PortalHeader({ website, moduleVisibility = {} }) {
+export function PortalHeader({ website, moduleVisibility = {}, announcements = [] }) {
   const base = `/${website.subdomain}`
   const isEnabled = (slug) => moduleVisibility[slug] !== false
   const links = [
@@ -21,7 +22,7 @@ export function PortalHeader({ website, moduleVisibility = {} }) {
   const quickLinks = links.filter((item) => ['Beranda', 'Layanan Publik', 'Profil Wilayah', 'Kabar Berita', 'Dokumen Resmi', 'Kontak'].includes(item.label))
   const infoLinks = links.filter((item) => ['Kabar Berita', 'Agenda Kegiatan', 'Program dan Kegiatan', 'Inovasi Wilayah', 'Galeri Foto', 'Galeri Video'].includes(item.label))
   const mobileLinks = [{ label: 'Beranda', href: base }, ...quickLinks.filter((item) => !['Beranda', 'Kabar Berita'].includes(item.label))]
-  return <header className="sticky top-0 z-40 border-b border-white/10 bg-[#071923]/95 text-white backdrop-blur-xl">
+  return <><header className="sticky top-0 z-40 border-b border-white/10 bg-[#071923]/95 text-white backdrop-blur-xl">
     <div className="mx-auto flex min-h-[72px] w-full max-w-[1440px] items-center justify-between gap-5 px-5 lg:px-10">
       <Link href={base} className="flex min-w-0 items-center gap-3" aria-label={`Beranda ${website.name}`}>
         <img src="/images/logo_bdg_putih.png" alt="Logo BDG" className="hidden h-8 w-8 shrink-0 object-contain sm:block sm:h-9 sm:w-9" />
@@ -34,7 +35,7 @@ export function PortalHeader({ website, moduleVisibility = {} }) {
       {moduleVisibility.kontak !== false && <div className="hidden xl:block"><Link href={`${base}/kontak`} className="inline-flex shrink-0 items-center gap-2 rounded-full bg-teal-600 px-4 py-2.5 text-xs font-bold text-white shadow-sm transition hover:bg-teal-500"><img src="/images/portal-warga.svg" alt="" className="h-4 w-4"/>Portal Warga</Link></div>}
       <MobilePortalMenu website={website} links={mobileLinks} infoLinks={infoLinks} showContact={moduleVisibility.kontak !== false}/>
     </div>
-  </header>
+  </header><OfficialAnnouncementPopup website={website} announcements={announcements} enabled={moduleVisibility.pengumuman !== false}/></>
 }
 
 export function PortalFooter({ website, profile, moduleVisibility = {} }) {

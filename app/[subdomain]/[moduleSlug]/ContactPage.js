@@ -47,11 +47,24 @@ function getMapEmbed(profile) {
 }
 
 function getDirectionsHref(profile) {
-  const candidate = profile?.google_maps_url || profile?.maps_embed_url
-  if (candidate) {
+  const candidates = [profile?.google_maps_url, profile?.maps_embed_url].filter(Boolean)
+  for (const candidate of candidates) {
     try {
       const url = new URL(candidate)
-      if (['google.com', 'www.google.com', 'maps.google.com', 'maps.app.goo.gl'].includes(url.hostname)) return url.toString()
+      if (!['http:', 'https:'].includes(url.protocol)) continue
+      if (url.hostname === 'maps.app.goo.gl' || url.hostname === 'goo.gl') return url.toString()
+      if (!['google.com', 'www.google.com', 'maps.google.com'].includes(url.hostname)) continue
+
+      // Embed links only work inside an iframe. Convert them to a regular
+      // directions URL so Google Maps does not show its iframe-only warning.
+      if (url.pathname.startsWith('/maps/embed')) {
+        const query = url.searchParams.get('q') || url.searchParams.get('query') || url.searchParams.get('destination')
+        const coordinates = decodeURIComponent(candidate).match(/!3d(-?\d+(?:\.\d+)?)!4d(-?\d+(?:\.\d+)?)/)
+        const destination = query || (coordinates ? `${coordinates[1]},${coordinates[2]}` : profile?.contact_address)
+        if (destination) return `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(destination)}`
+        continue
+      }
+      if (url.pathname.startsWith('/maps')) return url.toString()
     } catch { /* Use the office address for directions when the saved URL is incomplete. */ }
   }
   return profile?.contact_address ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(profile.contact_address)}` : ''
@@ -82,17 +95,6 @@ export default function ContactPage({ portal }) {
   const hasSocial = instagram || facebook || youtube
 
   return <>
-    <header className="relative isolate overflow-hidden border-b border-white/10 bg-[#06141D] px-5 py-14 text-center text-white sm:px-6 sm:py-16 lg:py-20">
-      <div aria-hidden="true" className="absolute inset-0 -z-20 bg-gradient-to-br from-[#06141D] via-[#0B302F] to-[#0D645D]"/>
-      {portal.heroSlides?.[0]?.image_path && <div aria-hidden="true" className="absolute inset-0 -z-10 bg-cover bg-center opacity-30" style={{ backgroundImage: `url(${JSON.stringify(portal.heroSlides[0].image_path)})` }}/>}
-      <div aria-hidden="true" className="absolute inset-0 -z-10 bg-[linear-gradient(160deg,rgba(4,18,16,.9),rgba(11,46,43,.82)_50%,rgba(13,77,68,.9))]"/>
-      <div className="relative mx-auto flex max-w-5xl flex-col items-center">
-        <span className="inline-flex rounded-lg border border-teal-400/40 bg-teal-500/20 px-4 py-1.5 text-[10px] font-extrabold uppercase tracking-[.18em] text-teal-200 sm:text-xs">Hubungi Kami</span>
-        <h1 className="mt-4 text-3xl font-black uppercase leading-tight tracking-tight sm:text-5xl">Kontak &amp; Informasi Kantor</h1>
-        <p className="mx-auto mt-4 max-w-2xl text-sm leading-relaxed text-slate-200 sm:text-base">Layanan komunikasi, lokasi kantor, jam pelayanan, dan kanal resmi {website.name}.</p>
-      </div>
-    </header>
-
     <main className="mx-auto w-full max-w-[1240px] space-y-7 px-4 py-8 sm:px-6 sm:py-10 lg:space-y-8 lg:px-8 lg:py-12">
       <section aria-label="Informasi kontak utama" className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 lg:gap-5">
         <ContactCard icon={MapPin} tone="bg-teal-50 text-teal-600" title="Alamat Lengkap Kantor" footer={directionsHref ? <a href={directionsHref} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-xs font-bold text-teal-700 hover:text-teal-800">Petunjuk Arah <ArrowUpRight className="h-3.5 w-3.5"/></a> : <span className="text-[11px] text-slate-400">Petunjuk arah belum tersedia.</span>}>

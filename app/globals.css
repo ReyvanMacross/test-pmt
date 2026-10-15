@@ -88,6 +88,18 @@ body .fixed.top-20.right-4 > :where(div, p) p:last-child {
   max-width: 100%;
 }
 
+.public-page-hero {
+  background-color: var(--portal-dark, #071923);
+  background-image:
+    radial-gradient(rgba(255,255,255,.36) 1px, transparent 1px),
+    linear-gradient(120deg, var(--portal-dark, #071923), var(--portal-hero-mid, #0b2538) 54%, var(--portal-hero-end, #0d645d));
+  background-size: 28px 28px, cover;
+}
+
+.public-page-hero__pattern {
+  background: radial-gradient(ellipse at 50% 100%, color-mix(in srgb, var(--portal-accent, #0d9488) 28%, transparent), transparent 62%);
+}
+
 /* Dinas and Kelurahan use the same public modules; only their design tokens differ. */
 [data-portal-template="dinas"] {
   --portal-ink: #0f172a;
@@ -99,6 +111,8 @@ body .fixed.top-20.right-4 > :where(div, p) p:last-child {
   --portal-accent-text: #0369a1;
   --portal-accent-on-dark: #7dd3fc;
   --portal-page: #f8fafc;
+  --portal-hero-mid: #102d4f;
+  --portal-hero-end: #075985;
   background-color: var(--portal-page);
   color: var(--portal-ink);
 }
@@ -113,6 +127,8 @@ body .fixed.top-20.right-4 > :where(div, p) p:last-child {
   --portal-accent-text: #92400e;
   --portal-accent-on-dark: #fcd34d;
   --portal-page: #fafafa;
+  --portal-hero-mid: #292524;
+  --portal-hero-end: #92400e;
   background-color: var(--portal-page);
   color: var(--portal-ink);
 }
@@ -181,3 +197,8 @@ body .fixed.top-20.right-4 > :where(div, p) p:last-child {
 [data-portal-template="kelurahan"] :is([class~="border-blue-200"], [class~="border-blue-300"], [class~="border-sky-200"]) { border-color: color-mix(in srgb, var(--portal-accent) 35%, transparent) !important; }
 [data-portal-template="dinas"] [class~="hover:bg-blue-700"]:hover,
 [data-portal-template="kelurahan"] [class~="hover:bg-blue-700"]:hover { background-color: var(--portal-accent-hover) !important; }
+
+@keyframes announcement-in {
+  from { opacity: 0; transform: translateY(0.5rem) scale(0.985); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}

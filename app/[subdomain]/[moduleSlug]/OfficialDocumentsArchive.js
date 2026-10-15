@@ -53,7 +53,7 @@ function DocumentCard({ document, subdomain }) {
   </article>
 }
 
-export default function OfficialDocumentsArchive({ subdomain, websiteName, documents, ppidIntroduction, backgroundImage }) {
+export default function OfficialDocumentsArchive({ subdomain, documents, ppidIntroduction }) {
   const [activeCategory, setActiveCategory] = useState('semua')
   const [search, setSearch] = useState('')
   const visibleDocuments = useMemo(() => {
@@ -66,24 +66,13 @@ export default function OfficialDocumentsArchive({ subdomain, websiteName, docum
   }, [activeCategory, documents, search])
 
   return <>
-    <header className="relative isolate overflow-hidden border-b border-white/10 bg-[#06141D] px-5 py-14 text-center text-white sm:px-6 sm:py-16 lg:py-20">
-      <div aria-hidden="true" className="absolute inset-0 -z-20 bg-gradient-to-br from-[#06141D] via-[#0B302F] to-[#0D645D]"/>
-      {backgroundImage && <div aria-hidden="true" className="absolute inset-0 -z-10 bg-cover bg-center opacity-30" style={{ backgroundImage: `url(${JSON.stringify(backgroundImage)})` }}/>}
-      <div aria-hidden="true" className="absolute inset-0 -z-10 bg-[linear-gradient(160deg,rgba(4,18,16,.9),rgba(11,46,43,.82)_50%,rgba(13,77,68,.9))]"/>
-      <div className="relative mx-auto max-w-4xl">
-        <span className="inline-flex rounded-lg border border-teal-400/40 bg-teal-500/20 px-4 py-1.5 text-[10px] font-extrabold uppercase tracking-[.18em] text-teal-200 sm:text-xs">Transparansi Publik</span>
-        <h1 className="mt-4 text-3xl font-black uppercase leading-tight tracking-tight sm:text-5xl">Dokumen Resmi &amp; Informasi Publik</h1>
-        <p className="mx-auto mt-4 max-w-2xl text-sm leading-relaxed text-slate-200 sm:text-base">Akses dan unduh dokumen kebijakan, laporan kinerja, informasi publik, serta layanan PPID {websiteName}.</p>
-      </div>
-    </header>
-
     <main className="mx-auto w-full max-w-[1240px] space-y-6 px-4 py-8 sm:px-6 sm:py-10 lg:px-8 lg:py-12">
       {ppidIntroduction && <section id="profil-ppid" className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6"><div className="flex items-start gap-3"><span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-teal-50 text-teal-700"><FileText className="h-5 w-5"/></span><div className="min-w-0"><p className="text-[9px] font-extrabold uppercase tracking-widest text-teal-700">PPID Pelaksana</p><h2 className="mt-1 text-base font-bold text-slate-900 sm:text-lg">{ppidIntroduction.title}</h2>{ppidIntroduction.description && <p className="mt-2 whitespace-pre-line text-xs leading-relaxed text-slate-600 sm:text-sm">{ppidIntroduction.description}</p>}{ppidIntroduction.attachments?.length > 0 && <div className="mt-4 flex flex-wrap gap-2">{ppidIntroduction.attachments.map((file, index) => <a key={`${file.url || file.path}-${index}`} href={file.url || file.path} target="_blank" rel="noreferrer" download={file.name || undefined} className="inline-flex items-center gap-2 rounded-lg border border-teal-200 bg-teal-50 px-3 py-2 text-xs font-bold text-teal-800 hover:bg-teal-100"><ArrowDownToLine className="h-4 w-4"/>{file.name || 'Unduh dokumen PPID'}</a>)}</div>}</div></div></section>}
 
       <section aria-label="Filter dokumen resmi" className="space-y-4 border-b border-slate-200 pb-5">
-        <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
-          <div className="flex min-w-0 gap-2 overflow-x-auto pb-1" role="tablist" aria-label="Kategori dokumen">{PUBLIC_DOCUMENT_CATEGORIES.map((category) => <button key={category.id} type="button" role="tab" aria-selected={activeCategory === category.id} onClick={() => setActiveCategory(category.id)} className={`shrink-0 rounded-xl border px-3 py-2 text-[10px] font-bold transition sm:px-4 sm:text-xs ${activeCategory === category.id ? 'border-teal-600 bg-teal-600 text-white shadow-sm' : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-100'}`}>{category.label}</button>)}</div>
-          <label className="relative block w-full shrink-0 xl:max-w-xs"><Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"/><span className="sr-only">Cari dokumen</span><input type="search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Cari nama dokumen..." className="w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-9 pr-3 text-xs text-slate-700 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/15"/></label>
+        <div className="flex flex-col gap-3">
+          <div className="flex flex-wrap gap-2" role="tablist" aria-label="Kategori dokumen">{PUBLIC_DOCUMENT_CATEGORIES.map((category) => <button key={category.id} type="button" role="tab" aria-selected={activeCategory === category.id} onClick={() => setActiveCategory(category.id)} className={`rounded-xl border px-3 py-2 text-[10px] font-bold transition sm:px-4 sm:text-xs ${activeCategory === category.id ? 'border-teal-600 bg-teal-600 text-white shadow-sm' : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-100'}`}>{category.label}</button>)}</div>
+          <label className="relative block w-full sm:ml-auto sm:max-w-xs"><Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"/><span className="sr-only">Cari dokumen</span><input type="search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Cari nama dokumen..." className="w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-9 pr-3 text-xs text-slate-700 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/15"/></label>
         </div>
         <p className="text-[11px] text-slate-500" aria-live="polite">Menampilkan {visibleDocuments.length} dari {documents.length} dokumen</p>
       </section>

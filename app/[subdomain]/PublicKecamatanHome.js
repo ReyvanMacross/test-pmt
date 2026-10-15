@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { ArrowRight, Bell, CalendarDays, Clock3, ContactRound, FileText, FolderTree, Image as ImageIcon, Info, Lightbulb, MapPin, Play, ShieldCheck, UsersRound, Video, Home, ClipboardList, Landmark, BadgeCheck, TableProperties, LockKeyhole, CalendarClock, Clock4, TriangleAlert, Inbox, MessageSquareWarning, Newspaper, Images, Network, Radio, Star, Phone } from 'lucide-react'
+import { ArrowRight, Bell, CalendarDays, Clock3, ContactRound, FileText, FolderTree, Image as ImageIcon, Info, Lightbulb, MapPin, ShieldCheck, UsersRound, Video, Home, ClipboardList, Landmark, BadgeCheck, TableProperties, LockKeyhole, CalendarClock, Clock4, TriangleAlert, Inbox, MessageSquareWarning, Newspaper, Images, Network, Radio, Star, Phone } from 'lucide-react'
 import { contentIsFilled, plainContent } from '@/lib/public-kecamatan'
 import { PortalFooter, PortalHeader } from './PortalChrome'
 import HeroSlider from './HeroSlider'
@@ -58,7 +58,7 @@ function PublicModuleCards({ portal }) {
 }
 
 export default function PublicKecamatanHome({ portal }) {
-  const { website, profile, contents, news, announcements, agendas, services, innovations, albums, heroSlides = [] } = portal
+  const { website, profile, contents, news, announcements, agendas, services, innovations, heroSlides = [] } = portal
   const isModuleEnabled = (slug) => portal.moduleVisibility?.[slug] !== false
   const base = `/${website.subdomain}`
   const homeContent = contents.beranda
@@ -70,14 +70,13 @@ export default function PublicKecamatanHome({ portal }) {
   const profileSummary = plainContent(profile?.visi || profileFallback)
   const latestNews = isModuleEnabled('berita') ? news.slice(0, 3) : []
   const upcomingAgenda = isModuleEnabled('agenda-kegiatan') ? agendas.filter((item) => new Date(item.end_date || item.start_date) >= new Date(new Date().toDateString())).slice(0, 3) : []
-  const visibleAlbums = albums.filter((album) => isModuleEnabled(album.type === 'image' ? 'galeri-gambar' : 'galeri-video'))
   const stats = [
     ['Luas Wilayah', profile?.luas_wilayah, 'km²'], ['Rukun Warga', profile?.jumlah_rw, 'RW'], ['Rukun Tetangga', profile?.jumlah_rt, 'RT'], ['Total Penduduk', profile?.total_jiwa, 'Jiwa'],
   ].filter(([, value]) => value !== null && value !== undefined && String(value).trim() !== '')
   const hasProfile = isModuleEnabled('profil') && Boolean(profileSummary || profile?.misi || stats.length)
 
-  return <div className="public-portal min-h-screen bg-white text-slate-900" data-portal-template={website.template_slug || 'kecamatan'}><PortalHeader website={website} profile={profile} moduleVisibility={portal.moduleVisibility}/>
-    {isModuleEnabled('hero-slider') && heroSlides.length > 0 && <HeroSlider slides={heroSlides} website={website} base={base} moduleVisibility={portal.moduleVisibility}/>}
+  return <div className="public-portal min-h-screen bg-white text-slate-900" data-portal-template={website.template_slug || 'kecamatan'}><PortalHeader website={website} profile={profile} moduleVisibility={portal.moduleVisibility} announcements={announcements}/>
+    {isModuleEnabled('hero-slider') && heroSlides.length > 0 && <HeroSlider slides={heroSlides} website={website} base={base} moduleVisibility={portal.moduleVisibility} announcements={announcements}/>}
 
     {isModuleEnabled('beranda') && hasIntroduction && <section className="border-b border-slate-100 bg-white px-5 py-10 text-center sm:py-12 lg:px-10"><div className="mx-auto max-w-3xl"><span className="inline-flex rounded-md bg-teal-50 px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-[.15em] text-teal-700">Integritas & Transparansi</span>{introductionTitle && <h2 className="mt-3 text-xl font-extrabold tracking-tight text-slate-900 sm:text-2xl">{introductionTitle}</h2>}{introductionBody && <p className="mx-auto mt-3 whitespace-pre-line text-sm leading-relaxed text-slate-600">{introductionBody}</p>}</div></section>}
 
@@ -91,11 +90,7 @@ export default function PublicKecamatanHome({ portal }) {
       {upcomingAgenda.length > 0 && <div className={latestNews.length > 0 ? 'mt-12' : ''}><SectionTitle eyebrow="Agenda Kewilayahan" title="Agenda Kegiatan" href={`${base}/agenda-kegiatan`}/><div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">{upcomingAgenda.map((item) => <article key={item.id} className="flex gap-4 rounded-2xl border border-slate-200 bg-white p-4"><span className="flex h-11 w-11 shrink-0 flex-col items-center justify-center rounded-xl bg-teal-50 text-teal-700"><CalendarDays className="h-4 w-4"/><span className="text-[9px] font-bold">{new Date(item.start_date).toLocaleDateString('id-ID',{day:'2-digit',month:'short'})}</span></span><div><h3 className="text-sm font-bold">{item.title}</h3><p className="mt-1 line-clamp-2 text-xs text-slate-500">{plainContent(item.description)}</p>{item.time_range && <p className="mt-2 flex items-center gap-1 text-[10px] font-semibold text-teal-700"><Clock3 className="h-3 w-3"/>{item.time_range}</p>}{item.location && <p className="mt-1 flex items-center gap-1 text-[10px] text-slate-500"><MapPin className="h-3 w-3"/>{item.location}</p>}</div></article>)}</div></div>}
     </div></section>}
 
-    {isModuleEnabled('pengumuman') && announcements.length > 0 && <section className="border-y border-amber-100 bg-amber-50/50 px-5 py-12 lg:px-10"><div className="mx-auto w-full max-w-[1440px]"><SectionTitle eyebrow="Informasi Resmi" title="Pengumuman Kecamatan" href={`${base}/pengumuman`}/><div className="grid gap-3 md:grid-cols-2">{announcements.slice(0,4).map((item) => <article key={item.id} className="rounded-xl border border-amber-100 bg-white p-4"><p className="text-[10px] font-semibold text-amber-700">Terbit {new Date(item.publish_date).toLocaleDateString('id-ID',{day:'numeric',month:'long',year:'numeric'})}</p><h3 className="mt-1 font-bold">{item.title}</h3><p className="mt-2 line-clamp-3 whitespace-pre-line text-xs leading-relaxed text-slate-600">{plainContent(item.body)}</p>{item.attachment_path && <a href={item.attachment_path} target="_blank" rel="noreferrer" className="mt-3 inline-flex items-center gap-1 text-[11px] font-bold text-teal-700"><FileText className="h-3.5 w-3.5"/>Unduh lampiran</a>}</article>)}</div></div></section>}
-
     {isModuleEnabled('inovasi') && innovations.length > 0 && <section className="px-5 py-12 lg:px-10"><div className="mx-auto w-full max-w-[1440px]"><SectionTitle eyebrow="Gagasan & Layanan" title="Inovasi Wilayah" href={`${base}/inovasi`}/><div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">{innovations.slice(0,3).map((item) => <article key={item.id} className="overflow-hidden rounded-2xl border border-slate-200 bg-white">{item.cover_path && <img src={item.cover_path} alt="" className="h-40 w-full object-cover" loading="lazy"/>}<div className="p-5"><h3 className="font-bold">{item.title}</h3><p className="mt-2 line-clamp-3 text-xs leading-relaxed text-slate-500">{plainContent(item.description)}</p>{item.launch_year && <p className="mt-3 text-[10px] font-bold text-teal-700">Diluncurkan {item.launch_year}</p>}</div></article>)}</div></div></section>}
-
-    {visibleAlbums.length > 0 && <section className="bg-slate-50 px-5 py-12 lg:px-10"><div className="mx-auto w-full max-w-[1440px] grid gap-10 xl:grid-cols-2">{['image','video'].map((type) => { const entries = visibleAlbums.filter((album) => album.type === type); if (!entries.length) return null; const moduleSlug = type === 'image' ? 'galeri-gambar' : 'galeri-video'; return <div key={type}><SectionTitle eyebrow="Dokumentasi" title={type === 'image' ? 'Galeri Foto' : 'Galeri Video'} href={`${base}/${moduleSlug}`}/><div className="grid grid-cols-2 gap-3">{entries.slice(0,2).map((album) => <Link key={album.id} href={`${base}/${moduleSlug}`} className="overflow-hidden rounded-xl border border-slate-200 bg-white">{album.cover_path && type === 'image' ? <img src={album.cover_path} alt="" className="h-32 w-full object-cover" loading="lazy"/> : <div className="flex h-32 items-center justify-center bg-slate-900 text-white">{type === 'image' ? <ImageIcon className="h-7 w-7"/> : <Play className="h-7 w-7"/>}</div>}<div className="p-3"><p className="truncate text-xs font-bold">{album.title}</p><p className="mt-1 text-[10px] text-slate-500">{album.item_count} item</p></div></Link>)}</div></div> })}</div></section>}
 
     <PublicModuleCards portal={portal}/>
     <PortalFooter website={website} profile={profile} moduleVisibility={portal.moduleVisibility}/>

@@ -32,24 +32,13 @@ function InnovationCard({ item }) {
   </article>
 }
 
-export default function ProgramInnovationPage({ website, content, innovations = [], backgroundImage, showProgram = true, showInnovations = true }) {
+export default function ProgramInnovationPage({ website, content, innovations = [], showProgram = true, showInnovations = true }) {
   const [search, setSearch] = useState('')
   const normalizedSearch = search.trim().toLocaleLowerCase('id-ID')
   const visibleInnovations = useMemo(() => innovations.filter((item) => !normalizedSearch || `${item.title} ${item.description || ''} ${item.launch_year || ''}`.toLocaleLowerCase('id-ID').includes(normalizedSearch)), [innovations, normalizedSearch])
   const files = [...(Array.isArray(content?.files) ? content.files : []), ...(Array.isArray(content?.images) ? content.images : [])]
 
   return <>
-    <header className="relative isolate overflow-hidden border-b border-white/10 bg-[#06141D] px-5 py-14 text-center text-white sm:py-20">
-      {backgroundImage ? <div aria-hidden="true" className="absolute inset-0 -z-20 bg-cover bg-center" style={{ backgroundImage: `url("${backgroundImage.replaceAll('"', '%22')}")` }}/> : null}
-      <div aria-hidden="true" className="absolute inset-0 -z-10 bg-[linear-gradient(160deg,rgba(4,18,16,0.94),rgba(11,46,43,0.88)_55%,rgba(13,77,68,0.92))]"/>
-      <div aria-hidden="true" className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_50%_20%,rgba(20,184,166,0.24),transparent_68%)]"/>
-      <div className="mx-auto flex max-w-4xl flex-col items-center">
-        <span className="inline-flex items-center gap-2 rounded-lg border border-teal-400/40 bg-teal-500/20 px-4 py-1.5 text-[10px] font-extrabold uppercase tracking-[.18em] text-teal-200 sm:text-[11px]">Program &amp; Inovasi {website.name}</span>
-        <h1 className="mt-4 text-3xl font-black uppercase leading-tight tracking-tight sm:text-4xl lg:text-5xl">Program Kerja &amp; Inovasi Pelayanan</h1>
-        <p className="mx-auto mt-4 max-w-2xl text-sm leading-relaxed text-slate-200 sm:text-base">Informasi program kerja, kegiatan pembangunan wilayah, dan inovasi pelayanan publik {website.name}.</p>
-      </div>
-    </header>
-
     <main className="mx-auto w-full max-w-[1240px] space-y-10 px-4 py-9 sm:space-y-12 sm:px-6 sm:py-12">
       {showProgram && <section aria-labelledby="program-title" className="space-y-5 rounded-3xl border border-slate-200/80 bg-white p-5 shadow-sm sm:p-8 lg:p-10">
         <div className="border-b border-slate-100 pb-4"><span className="text-[10px] font-extrabold uppercase tracking-[.16em] text-teal-700">Rencana Kerja Wilayah</span><h2 id="program-title" className="mt-2 text-xl font-extrabold tracking-tight text-slate-900 sm:text-2xl">{content?.title || `Program dan Kegiatan ${website.name}`}</h2></div>

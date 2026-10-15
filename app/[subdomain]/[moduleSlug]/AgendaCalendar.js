@@ -27,7 +27,7 @@ function formatMonth(year, month) {
   return monthFormatter.format(new Date(Date.UTC(year, month, 1)))
 }
 
-export default function AgendaCalendar({ agendas = [], websiteName, backgroundImage }) {
+export default function AgendaCalendar({ agendas = [] }) {
   const today = new Date()
   const [visibleMonth, setVisibleMonth] = useState(() => new Date(today.getFullYear(), today.getMonth(), 1))
   const [selectedDate, setSelectedDate] = useState('')
@@ -58,17 +58,6 @@ export default function AgendaCalendar({ agendas = [], websiteName, backgroundIm
   }
 
   return <>
-    <header className="relative isolate overflow-hidden bg-[#071820] text-center text-white">
-      <div className="absolute inset-0 -z-20 bg-gradient-to-br from-[#071820] via-[#0b3a3b] to-[#0b6259]"/>
-      {backgroundImage && <div aria-hidden="true" className="absolute inset-0 -z-10 bg-cover bg-center opacity-30" style={{ backgroundImage: `url(${JSON.stringify(backgroundImage)})` }}/>}
-      <div className="absolute inset-0 -z-10 bg-gradient-to-r from-[#061820]/90 via-[#092f32]/80 to-[#07594f]/75"/>
-      <div className="mx-auto max-w-5xl px-5 py-14 sm:px-8 sm:py-20">
-        <span className="inline-flex rounded-lg border border-teal-400/40 bg-teal-500/15 px-4 py-1.5 text-[10px] font-extrabold uppercase tracking-[.18em] text-teal-200 sm:text-xs">Jadwal Kegiatan Resmi</span>
-        <h1 className="mt-4 text-3xl font-black uppercase leading-tight tracking-tight sm:text-5xl lg:text-6xl">Agenda &amp; Acara Kewilayahan</h1>
-        <p className="mx-auto mt-4 max-w-3xl text-sm leading-relaxed text-slate-200 sm:text-lg">Jadwal acara resmi, musyawarah pembangunan, rapat koordinasi pimpinan, dan agenda pelayanan masyarakat di {websiteName || 'wilayah'}.</p>
-      </div>
-    </header>
-
     <main className="mx-auto w-full max-w-[1320px] space-y-8 px-4 py-8 sm:px-6 sm:py-12 lg:px-8">
       <section aria-label="Kalender agenda kegiatan" className="rounded-3xl border border-slate-200/80 bg-white p-4 shadow-sm sm:p-6 lg:p-8">
         <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-100 pb-5">

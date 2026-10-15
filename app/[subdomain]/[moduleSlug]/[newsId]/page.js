@@ -1,8 +1,9 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { ArrowLeft, ArrowRight, ArrowUpRight, CalendarDays, Clock3, FileText, MapPin, Newspaper, UserRound } from 'lucide-react'
+import { ArrowLeft, ArrowRight, ArrowUpRight, CalendarDays, Clock3, FileText, MapPin, Newspaper } from 'lucide-react'
 import { getKecamatanPortal, plainContent } from '@/lib/public-kecamatan'
 import { PortalFooter, PortalHeader } from '../../PortalChrome'
+import PublicPageHero from '../../PublicPageHero'
 
 export const dynamic = 'force-dynamic'
 
@@ -30,17 +31,10 @@ export default async function PublicNewsArticlePage({ params }) {
   const paragraphs = String(article.body).split(/\r?\n\s*\r?\n/).map((part) => part.trim()).filter(Boolean)
 
   return <div className="public-portal min-h-screen bg-slate-50 text-slate-900" data-portal-template={portal.website.template_slug || 'kecamatan'}>
-    <PortalHeader website={portal.website} profile={portal.profile} moduleVisibility={portal.moduleVisibility}/>
-    <header className="relative overflow-hidden border-b border-white/10 bg-[#06141D] px-5 py-10 text-white sm:py-14 lg:py-16">
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(13,148,136,0.4),transparent_65%)]"/>
-      <div className="relative mx-auto w-full max-w-5xl">
-        <nav aria-label="Breadcrumb" className="mb-7 flex flex-wrap items-center gap-2 text-xs text-slate-300"><Link href={`/${subdomain}`} className="hover:text-teal-200">Beranda</Link><span>/</span><Link href={`/${subdomain}/berita`} className="hover:text-teal-200">Kabar Berita</Link><span>/</span><span className="max-w-[45vw] truncate text-white">Detail Berita</span></nav>
-        <span className="inline-flex rounded-full border border-teal-300/30 bg-teal-400/10 px-3 py-1 text-[10px] font-extrabold uppercase tracking-[.16em] text-teal-200">{article.category || 'Kabar Wilayah'}</span>
-        <h1 className="mt-4 max-w-4xl text-2xl font-black leading-tight tracking-tight sm:text-4xl lg:text-5xl">{article.title}</h1>
-        <div className="mt-6 flex flex-wrap gap-x-6 gap-y-3 text-xs text-slate-300"><span className="inline-flex items-center gap-2"><UserRound className="h-4 w-4 text-teal-300"/>{article.author || `Redaksi ${portal.website.name}`}</span><span className="inline-flex items-center gap-2"><CalendarDays className="h-4 w-4 text-teal-300"/>{formatDate(article.published_at || article.created_at)}</span></div>
-      </div>
-    </header>
+    <PortalHeader website={portal.website} profile={portal.profile} moduleVisibility={portal.moduleVisibility} announcements={portal.announcements}/>
+    <PublicPageHero eyebrow={article.category || 'Kabar Wilayah'} title={article.title} description={`${article.author || `Redaksi ${portal.website.name}`} · ${formatDate(article.published_at || article.created_at)}`}/>
     <main className="mx-auto grid w-full max-w-6xl gap-8 px-4 py-8 sm:px-6 sm:py-10 lg:grid-cols-12">
+      <nav aria-label="Breadcrumb" className="flex flex-wrap items-center gap-2 text-xs text-slate-500 lg:col-span-12"><Link href={`/${subdomain}`} className="hover:text-teal-700">Beranda</Link><span>/</span><Link href={`/${subdomain}/berita`} className="hover:text-teal-700">Kabar Berita</Link><span>/</span><span className="max-w-[45vw] truncate text-slate-700">Detail Berita</span></nav>
       <article className="min-w-0 space-y-7 rounded-3xl border border-slate-200/80 bg-white p-5 shadow-sm sm:p-8 lg:col-span-8">
         {article.image && <figure className="overflow-hidden rounded-2xl bg-slate-100"><img src={article.image} alt={article.title} className="max-h-[480px] w-full object-cover" referrerPolicy="no-referrer"/><figcaption className="px-4 py-3 text-xs text-slate-500">Dokumentasi: {article.title}</figcaption></figure>}
         {article.excerpt && <div className="rounded-2xl border-l-4 border-teal-600 bg-teal-50/70 p-5 text-sm font-semibold leading-7 text-slate-800 sm:text-base">{article.excerpt}</div>}

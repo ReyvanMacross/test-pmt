@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { Save, X } from 'lucide-react'
+import { ExternalLink, Save, X } from 'lucide-react'
 import { saveContactAction } from './actions'
 
 const contactFields = [
@@ -19,6 +19,11 @@ export default function ContactForm({ website, initialContact = {} }) {
   const inputClass = 'w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-800 transition focus:border-blue-600 focus:outline-none focus:ring-1 focus:ring-blue-600 placeholder:text-slate-400'
   function setField(event) { setValues((current) => ({ ...current, [event.target.name]: event.target.value })) }
   function notify(type, message) { setToast({ type, message }); setTimeout(() => setToast(null), 4000) }
+  let mapsPreviewUrl = ''
+  try {
+    const candidate = new URL(values.google_maps_url)
+    if (['http:', 'https:'].includes(candidate.protocol) && (candidate.hostname === 'maps.app.goo.gl' || candidate.hostname === 'goo.gl' || candidate.hostname === 'google.com' || candidate.hostname.endsWith('.google.com'))) mapsPreviewUrl = candidate.toString()
+  } catch { /* The optional preview appears after a complete valid URL is entered. */ }
 
   async function submit(event) {
     event.preventDefault()
@@ -45,7 +50,7 @@ export default function ContactForm({ website, initialContact = {} }) {
         <div><label htmlFor="contact-phone" className="mb-2 block text-sm font-semibold text-slate-800">Nomor Telepon Kantor</label><input id="contact-phone" name="office_phone" type="tel" maxLength={100} value={values.office_phone} onChange={setField} placeholder="Contoh: (022) 5221234" className={inputClass}/></div>
         <div><label htmlFor="contact-whatsapp" className="mb-2 block text-sm font-semibold text-slate-800">Nomor WhatsApp Hotline / Pengaduan</label><input id="contact-whatsapp" name="whatsapp_phone" type="tel" maxLength={100} value={values.whatsapp_phone} onChange={setField} placeholder="Contoh: 0812-3456-7890" className={inputClass}/></div>
         <div><label htmlFor="contact-email" className="mb-2 block text-sm font-semibold text-slate-800">Email Resmi Instansi</label><input id="contact-email" name="official_email" type="email" maxLength={255} value={values.official_email} onChange={setField} placeholder="Contoh: humas@instansi.go.id" className={inputClass}/></div>
-        <div><label htmlFor="contact-maps" className="mb-2 block text-sm font-semibold text-slate-800">Link Google Maps Embed / Shared URL <span className="font-normal text-slate-400">(Opsional)</span></label><input id="contact-maps" name="google_maps_url" type="url" maxLength={2000} value={values.google_maps_url} onChange={setField} placeholder="Contoh: https://maps.google.com/?q=Kecamatan+Bojongloa+Kidul" className={inputClass}/></div>
+        <div><label htmlFor="contact-maps" className="mb-2 block text-sm font-semibold text-slate-800">Tautan Berbagi Google Maps <span className="font-normal text-slate-400">(Opsional)</span></label><input id="contact-maps" name="google_maps_url" type="url" maxLength={2000} value={values.google_maps_url} onChange={setField} placeholder="https://maps.app.goo.gl/contoh-link" className={inputClass}/><p className="mt-1.5 text-xs leading-relaxed text-slate-500">Salin dari Google Maps melalui Bagikan → Salin link. Tautan maps.app.goo.gl dipakai untuk tombol arah publik. Tampilan peta tertanam tetap menggunakan URL embed di pengaturan Profil.</p>{mapsPreviewUrl && <a href={mapsPreviewUrl} target="_blank" rel="noreferrer" className="mt-2 inline-flex items-center gap-1.5 text-xs font-semibold text-blue-700 hover:text-blue-800">Coba buka tautan Maps <ExternalLink className="h-3.5 w-3.5"/></a>}</div>
       </div>
       <div className="grid grid-cols-1 gap-5 border-b border-slate-100 pb-5 md:grid-cols-3">
         <div><label htmlFor="contact-instagram" className="mb-2 block text-sm font-semibold text-slate-800">Instagram Username</label><input id="contact-instagram" name="instagram_username" maxLength={255} value={values.instagram_username} onChange={setField} placeholder="Contoh: @bojongloakidul" className={inputClass}/></div>
