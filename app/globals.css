@@ -229,6 +229,23 @@ body .fixed.top-20.right-4 > :where(div, p) p:last-child {
 [data-portal-template="dinas"] :is([class~="border-teal-100"], [class~="border-teal-200"], [class~="border-teal-300"], [class~="border-teal-400"], [class~="border-teal-500"], [class~="border-teal-600"], [class~="border-teal-700"], [class~="border-teal-800"]),
 [data-portal-template="kelurahan"] :is([class~="border-teal-100"], [class~="border-teal-200"], [class~="border-teal-300"], [class~="border-teal-400"], [class~="border-teal-500"], [class~="border-teal-600"], [class~="border-teal-700"], [class~="border-teal-800"]) { border-color: color-mix(in srgb, var(--portal-accent) 35%, transparent) !important; }
 
+[data-portal-template="dinas"] :is([class~="border-teal-300/30"], [class~="border-teal-500/20"], [class~="border-teal-400/40"]),
+[data-portal-template="kelurahan"] :is([class~="border-teal-300/30"], [class~="border-teal-500/20"], [class~="border-teal-400/40"]) { border-color: color-mix(in srgb, var(--portal-accent) 36%, transparent) !important; }
+
+[data-portal-template="dinas"] [class*="border-teal-"][class*="/"],
+[data-portal-template="kelurahan"] [class*="border-teal-"][class*="/"] { border-color: color-mix(in srgb, var(--portal-accent) 36%, transparent) !important; }
+
+[data-portal-template="dinas"] :is([class~="hover:border-teal-200"], [class~="hover:border-teal-300"], [class~="hover:border-teal-400"]):hover,
+[data-portal-template="kelurahan"] :is([class~="hover:border-teal-200"], [class~="hover:border-teal-300"], [class~="hover:border-teal-400"]):hover { border-color: var(--portal-accent) !important; }
+
+[data-portal-template="dinas"] [class*="hover:border-teal-"]:hover,
+[data-portal-template="kelurahan"] [class*="hover:border-teal-"]:hover { border-color: var(--portal-accent) !important; }
+
+[data-portal-template="dinas"] a.group:hover [class~="group-hover:text-teal-700"],
+[data-portal-template="kelurahan"] a.group:hover [class~="group-hover:text-teal-700"],
+[data-portal-template="dinas"] :is([class~="hover:text-teal-700"], [class~="hover:text-teal-800"], [class~="hover:text-teal-900"]):hover,
+[data-portal-template="kelurahan"] :is([class~="hover:text-teal-700"], [class~="hover:text-teal-800"], [class~="hover:text-teal-900"]):hover { color: var(--portal-accent-text) !important; }
+
 [data-portal-template="dinas"] :is([class~="bg-amber-50"], [class~="bg-amber-100"]) { background-color: var(--portal-accent-badge) !important; }
 [data-portal-template="dinas"] :is([class~="bg-amber-300"], [class~="bg-amber-400"], [class~="bg-amber-500"], [class~="bg-amber-600"]) { background-color: var(--portal-accent) !important; color: white !important; }
 [data-portal-template="dinas"] :is([class~="text-amber-100"], [class~="text-amber-200"], [class~="text-amber-300"], [class~="text-amber-400"]) { color: var(--portal-accent-on-dark) !important; }

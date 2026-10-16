@@ -45,7 +45,7 @@ export default function HeroSlider({ slides, website, base, moduleVisibility = {
       {activeSlide.badge_text && <span className={`inline-flex rounded-md border px-3 py-1.5 text-[10px] font-extrabold uppercase tracking-[.18em] ${badgeStyles[activeSlide.badge_color] || badgeStyles.teal}`}>{activeSlide.badge_text}</span>}
       <h1 aria-live="polite" className="mt-5 max-w-4xl break-words text-3xl font-black uppercase leading-[1.08] tracking-tight sm:mt-6 sm:text-5xl lg:text-6xl">{activeSlide.headline || website.name}</h1>
       <div key={`hero-copy-${activeIndex}`} className="public-home-hero__copy w-full">
-        {activeSlide.description && <p className="mt-4 max-w-2xl text-sm leading-relaxed text-slate-200 sm:mt-5 sm:text-base">{activeSlide.description}</p>}
+        {activeSlide.description && <p className="mx-auto mt-4 max-w-2xl text-sm leading-relaxed text-slate-200 sm:mt-5 sm:text-base">{activeSlide.description}</p>}
         <div className="public-home-hero__actions mt-6 flex w-full flex-col items-stretch justify-center gap-3 sm:mt-7 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center"><Link href={primaryHref} className="inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-amber-400 px-6 py-3 text-sm font-extrabold text-slate-900 shadow-lg transition hover:bg-amber-300">{variant.primary[1]} <ArrowRight className="h-4 w-4"/></Link><Link href={secondaryHref} className="inline-flex min-h-12 items-center justify-center rounded-full border border-white/30 px-6 py-3 text-sm font-bold text-white transition hover:bg-white/10">{variant.secondary[1]}</Link></div>
         <p className="mt-10 text-[10px] font-bold uppercase tracking-[.16em] text-teal-200">{website.name} — Pemerintah Kota Bandung</p>
       </div>
