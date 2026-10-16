@@ -92,12 +92,15 @@ body .fixed.top-20.right-4 > :where(div, p) p:last-child {
   background-color: var(--portal-dark, #071923);
   background-image:
     radial-gradient(rgba(255,255,255,.36) 1px, transparent 1px),
-    linear-gradient(120deg, var(--portal-dark, #071923), var(--portal-hero-mid, #0b2538) 54%, var(--portal-hero-end, #0d645d));
-  background-size: 28px 28px, cover;
+    linear-gradient(110deg, rgba(4, 19, 29, .76), rgba(4, 30, 38, .58)),
+    url('/images/gedung-sate-hero.jpg');
+  background-size: 28px 28px, cover, cover;
+  background-position: center, center, center 54%;
+  background-repeat: repeat, no-repeat, no-repeat;
 }
 
 .public-page-hero__pattern {
-  background: radial-gradient(ellipse at 50% 100%, color-mix(in srgb, var(--portal-accent, #0d9488) 28%, transparent), transparent 62%);
+  background: linear-gradient(180deg, transparent 60%, rgba(3, 18, 27, .18));
 }
 
 /* Dinas and Kelurahan use the same public modules; only their design tokens differ. */
