@@ -23,7 +23,7 @@ export default async function EditServicePage({ params }) {
   const website = websiteResult.rows[0]
   if (!website) notFound()
   if (!(await canManageWebsite(session, website.id, website.user_id))) redirect('/admin/network')
-  const serviceResult = await query('SELECT id, name, category, description, requirements, procedure, completion_time, fee, application_url FROM services WHERE id = $1 AND website_id = $2 LIMIT 1', [serviceId, website.id])
+  const serviceResult = await query('SELECT id, name, category, description, requirements, procedure, completion_time, application_url FROM services WHERE id = $1 AND website_id = $2 LIMIT 1', [serviceId, website.id])
   const service = serviceResult.rows[0]
   if (!service) notFound()
 

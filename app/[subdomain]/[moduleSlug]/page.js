@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
-import { ArrowLeft, ArrowUpRight, BadgeCheck, Clock3, FileText, Flag, House, MapPin, Ruler, UsersRound } from 'lucide-react'
+import { ArrowLeft, ArrowUpRight, BadgeCheck, FileText, Flag, House, MapPin, Ruler, UsersRound } from 'lucide-react'
 import { contentIsFilled, plainContent, getKecamatanPortal, getKecamatanWebsite } from '@/lib/public-kecamatan'
 import { CONTENT_MODULES } from '@/lib/content-modules'
 import { PortalFooter, PortalHeader } from '../PortalChrome'
@@ -13,6 +13,7 @@ import OfficialDocumentsArchive from './OfficialDocumentsArchive'
 import OfficialDocumentDetail from './OfficialDocumentDetail'
 import ProgramInnovationPage from './ProgramInnovationPage'
 import PublicGallery from './PublicGallery'
+import ServiceCatalog from './ServiceCatalog'
 import { PUBLIC_DOCUMENT_MODULES, PUBLIC_DOCUMENT_MODULE_SLUGS } from '@/lib/public-documents'
 
 export const dynamic = 'force-dynamic'
@@ -57,9 +58,6 @@ function programPlainContent(value = '') {
     return '\n'
   })
   return plainContent(marked)
-}
-function ServiceList({ services }) {
-  return services.length ? <div className="grid gap-4 md:grid-cols-2">{services.map((service) => <Panel key={service.id}><div className="flex flex-wrap items-start justify-between gap-2"><h2 className="font-extrabold">{service.name}</h2>{service.category && <span className="rounded-full bg-teal-50 px-2.5 py-1 text-[10px] font-bold text-teal-700">{service.category}</span>}</div>{service.description && <p className="mt-3 whitespace-pre-line text-sm leading-6 text-slate-600">{plainContent(service.description)}</p>}{service.requirements && <div className="mt-4"><h3 className="text-xs font-bold uppercase tracking-wide text-slate-500">Persyaratan</h3><p className="mt-1 whitespace-pre-line text-sm leading-6 text-slate-600">{plainContent(service.requirements)}</p></div>}{service.procedure && <div className="mt-4"><h3 className="text-xs font-bold uppercase tracking-wide text-slate-500">Prosedur</h3><p className="mt-1 whitespace-pre-line text-sm leading-6 text-slate-600">{plainContent(service.procedure)}</p></div>}<div className="mt-4 flex flex-wrap gap-x-5 gap-y-2 text-xs text-slate-500">{service.completion_time && <span><Clock3 className="mr-1 inline h-3.5 w-3.5"/>{service.completion_time}</span>}{service.fee && <span>Tarif: {service.fee}</span>}{service.application_url && <a href={service.application_url} target="_blank" rel="noreferrer" className="font-bold text-teal-700">Akses layanan <ArrowUpRight className="inline h-3.5 w-3.5"/></a>}</div></Panel>)}</div> : <Panel><p className="text-sm text-slate-500">Belum ada layanan yang dipublikasikan.</p></Panel>
 }
 function ProfileBoundaries({ profile, descriptions = {} }) {
   const entries = [['Utara', profile.batas_utara, descriptions.Utara], ['Selatan', profile.batas_selatan, descriptions.Selatan], ['Timur', profile.batas_timur, descriptions.Timur], ['Barat', profile.batas_barat, descriptions.Barat]].filter(([, value]) => value)
@@ -124,7 +122,6 @@ function ModuleRecords({ slug, portal }) {
     const content = portal.contents[slug]
     return <Panel>{plainContent(content?.body || '') && <p className="mb-4 whitespace-pre-line text-sm leading-7 text-slate-600">{plainContent(content.body)}</p>}<OrganizationStructureViewer content={content || {}} headerTitle={content?.title || `Struktur Organisasi ${portal.website.name}`}/><FileLinks files={content?.files}/></Panel>
   }
-  if (slug === 'layanan') return <ServiceList services={portal.services}/>
   if (slug === 'berita') return portal.news.length ? <NewsArchive portal={portal}/> : <Panel><p className="text-sm text-slate-500">Belum ada berita yang dipublikasikan.</p></Panel>
   if (slug === 'agenda-kegiatan') return <AgendaCalendar agendas={portal.agendas} websiteName={portal.website.name}/>
   if (slug === 'pengumuman') return portal.announcements.length ? <div className="space-y-4">{portal.announcements.map((item) => <Panel key={item.id}><p className="text-xs font-semibold text-teal-700">Terbit {new Date(item.publish_date).toLocaleDateString('id-ID',{day:'numeric',month:'long',year:'numeric'})}</p><h2 className="mt-2 font-extrabold">{item.title}</h2><p className="mt-3 whitespace-pre-line text-sm leading-7 text-slate-600">{plainContent(item.body)}</p>{item.attachment_path && <a href={item.attachment_path} target="_blank" rel="noreferrer" className="mt-4 inline-flex items-center gap-2 text-sm font-bold text-blue-700"><FileText className="h-4 w-4"/>{item.attachment_name || 'Unduh lampiran'}<ArrowUpRight className="h-4 w-4"/></a>}</Panel>)}</div> : <Panel><p className="text-sm text-slate-500">Belum ada pengumuman aktif.</p></Panel>
@@ -221,6 +218,10 @@ export default async function PublicModulePage({ params }) {
       ...(portal.moduleVisibility?.['profil-pimpinan'] !== false ? [{ label: 'Profil Pimpinan', href: '#profil-pimpinan' }] : []),
       ...(portal.moduleVisibility?.['struktur-organisasi'] !== false ? [{ label: 'Struktur Organisasi', href: '#struktur-organisasi' }] : []),
     ]}/><ProfileRegionPage portal={portal} subdomain={subdomain}/><PortalFooter website={portal.website} profile={portal.profile} moduleVisibility={portal.moduleVisibility}/></div>
+  }
+  if (moduleSlug === 'layanan') {
+    const services = portal.services.map((service) => ({ ...service, description: plainContent(service.description || ''), requirements: plainContent(service.requirements || ''), procedure: plainContent(service.procedure || '') }))
+    return <div className="public-portal min-h-screen bg-slate-50 text-slate-900" data-portal-template={portal.website.template_slug || 'kecamatan'}><PortalHeader website={portal.website} profile={portal.profile} moduleVisibility={portal.moduleVisibility} announcements={portal.announcements}/><ServiceCatalog website={portal.website} services={services}/><PortalFooter website={portal.website} profile={portal.profile} moduleVisibility={portal.moduleVisibility}/></div>
   }
   const recordModules = ['layanan','berita','agenda-kegiatan','program-dan-kegiatan','pengumuman','inovasi','galeri-gambar','galeri-video','kontak','profil','struktur-organisasi', ...PUBLIC_DOCUMENT_MODULE_SLUGS]
   const genericContent = portal.contents[moduleSlug]

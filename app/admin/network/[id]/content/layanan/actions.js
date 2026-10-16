@@ -28,7 +28,6 @@ function readService(formData) {
   const requirements = String(formData.get('requirements') || '').trim() || null
   const procedure = String(formData.get('procedure') || '').trim() || null
   const completionTime = String(formData.get('completion_time') || '').trim() || null
-  const fee = String(formData.get('fee') || '').trim() || null
   const applicationUrl = String(formData.get('application_url') || '').trim() || null
   if (!name || name.length > 255) throw new Error('Nama layanan wajib diisi, maksimal 255 karakter.')
   if (!CATEGORIES.has(category)) throw new Error('Pilih kategori layanan yang tersedia.')
@@ -36,7 +35,6 @@ function readService(formData) {
   if (requirements && requirements.length > 20000) throw new Error('Persyaratan maksimal 20.000 karakter.')
   if (procedure && procedure.length > 20000) throw new Error('Prosedur maksimal 20.000 karakter.')
   if (completionTime && completionTime.length > 150) throw new Error('Waktu penyelesaian maksimal 150 karakter.')
-  if (fee && fee.length > 150) throw new Error('Biaya/tarif maksimal 150 karakter.')
   if (applicationUrl) {
     try {
       const parsed = new URL(applicationUrl)
@@ -44,7 +42,7 @@ function readService(formData) {
     } catch { throw new Error('Link aplikasi harus menggunakan URL http:// atau https:// yang valid.') }
     if (applicationUrl.length > 2000) throw new Error('Link aplikasi maksimal 2.000 karakter.')
   }
-  return { name, category, description, requirements, procedure, completionTime, fee, applicationUrl }
+  return { name, category, description, requirements, procedure, completionTime, applicationUrl }
 }
 
 function revalidate(websiteId) {
@@ -67,9 +65,9 @@ export async function createServiceAction(websiteId, formData) {
       await client.query('BEGIN')
       const result = await client.query(
         `INSERT INTO services (website_id, name, category, description, requirements, procedure, completion_time, fee, application_url)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-         RETURNING id, website_id, name, category, description, requirements, procedure, completion_time, fee, application_url, created_at, updated_at`,
-        [website.id, service.name, service.category, service.description, service.requirements, service.procedure, service.completionTime, service.fee, service.applicationUrl]
+         VALUES ($1, $2, $3, $4, $5, $6, $7, '', $8)
+         RETURNING id, website_id, name, category, description, requirements, procedure, completion_time, application_url, created_at, updated_at`,
+        [website.id, service.name, service.category, service.description, service.requirements, service.procedure, service.completionTime, service.applicationUrl]
       )
       created = result.rows[0]
       await logActivity(client, session.id, website.id, 'create_service', `${website.name}: menambahkan layanan publik "${service.name}".`)
@@ -90,10 +88,10 @@ export async function updateServiceAction(websiteId, serviceId, formData) {
       await client.query('BEGIN')
       const result = await client.query(
         `UPDATE services SET name = $1, category = $2, description = $3, requirements = $4, procedure = $5,
-          completion_time = $6, fee = $7, application_url = $8, updated_at = NOW()
-         WHERE id = $9 AND website_id = $10
-         RETURNING id, website_id, name, category, description, requirements, procedure, completion_time, fee, application_url, created_at, updated_at`,
-        [service.name, service.category, service.description, service.requirements, service.procedure, service.completionTime, service.fee, service.applicationUrl, serviceId, website.id]
+          completion_time = $6, fee = '', application_url = $7, updated_at = NOW()
+         WHERE id = $8 AND website_id = $9
+         RETURNING id, website_id, name, category, description, requirements, procedure, completion_time, application_url, created_at, updated_at`,
+        [service.name, service.category, service.description, service.requirements, service.procedure, service.completionTime, service.applicationUrl, serviceId, website.id]
       )
       updated = result.rows[0]
       if (!updated) throw new Error('Layanan tidak ditemukan pada website ini.')

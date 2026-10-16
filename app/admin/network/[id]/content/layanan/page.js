@@ -22,8 +22,8 @@ export default async function ServicesPage({ params }) {
   if (!website) notFound()
   if (!(await canManageWebsite(session, website.id, website.user_id))) redirect('/admin/network')
   const result = await query(
-    `SELECT id, website_id, name, category, description, requirements, procedure, completion_time, fee, application_url, created_at, updated_at
-     FROM services WHERE website_id = $1 ORDER BY category ASC, name ASC`, [website.id]
+    `SELECT id, website_id, name, category, description, requirements, procedure, completion_time, application_url, created_at, updated_at
+     FROM services WHERE website_id = $1 ORDER BY updated_at DESC NULLS LAST, created_at DESC NULLS LAST, id DESC`, [website.id]
   )
   const version = JSON.stringify(result.rows.map((service) => [service.id, service.updated_at]))
   return <ServicesManagerClient key={version} website={website} initialServices={result.rows}/>
