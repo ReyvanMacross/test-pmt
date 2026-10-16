@@ -80,6 +80,7 @@ body .fixed.top-20.right-4 > :where(div, p) p:last-child {
   overflow-x: clip;
   font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
   -webkit-font-smoothing: antialiased;
+  animation: portal-page-in 420ms cubic-bezier(.2, .75, .25, 1) both;
 }
 
 .public-portal img,
@@ -88,19 +89,85 @@ body .fixed.top-20.right-4 > :where(div, p) p:last-child {
   max-width: 100%;
 }
 
+@keyframes portal-fade-up {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes portal-page-in {
+  from { transform: translateY(6px); }
+  to { transform: translateY(0); }
+}
+
+.public-portal .public-page-hero > .relative {
+  animation: portal-fade-up 650ms cubic-bezier(.2, .75, .25, 1) both;
+}
+
+.public-portal main > * {
+  animation: portal-fade-up 560ms cubic-bezier(.2, .75, .25, 1) both;
+}
+
+.public-portal > section {
+  animation: portal-fade-up 560ms cubic-bezier(.2, .75, .25, 1) both;
+}
+
+.public-portal > section:nth-of-type(2) { animation-delay: 70ms; }
+.public-portal > section:nth-of-type(3) { animation-delay: 130ms; }
+.public-portal > section:nth-of-type(4) { animation-delay: 190ms; }
+
+.public-portal main > :nth-child(2) { animation-delay: 70ms; }
+.public-portal main > :nth-child(3) { animation-delay: 130ms; }
+.public-portal main > :nth-child(4) { animation-delay: 190ms; }
+
+.public-portal article {
+  animation: portal-fade-up 520ms cubic-bezier(.2, .75, .25, 1) both;
+  transition: box-shadow 180ms ease, border-color 180ms ease;
+}
+
+.public-portal article:hover {
+  box-shadow: 0 12px 28px rgb(15 23 42 / 8%);
+}
+
+.public-home-hero__content {
+  animation: portal-fade-up 720ms cubic-bezier(.2, .75, .25, 1) both;
+}
+
+.public-home-hero__image {
+  animation: portal-hero-image-in 700ms ease-out both;
+}
+
+@keyframes portal-hero-image-in {
+  from { opacity: 0; transform: scale(1.025); }
+  to { opacity: .5; transform: scale(1); }
+}
+
+.public-home-hero__base {
+  background: linear-gradient(125deg, var(--portal-dark, #071923), color-mix(in srgb, var(--portal-accent, #0d9488) 38%, var(--portal-dark, #071923)) 58%, var(--portal-dark, #071923));
+}
+
+.public-home-hero__overlay {
+  background: linear-gradient(110deg, color-mix(in srgb, var(--portal-dark, #071923) 50%, transparent), color-mix(in srgb, var(--portal-accent, #0d9488) 34%, transparent) 58%, color-mix(in srgb, var(--portal-dark, #071923) 44%, transparent));
+}
+
+.public-home-hero__dots {
+  background-image: radial-gradient(rgba(255, 255, 255, .22) .8px, transparent .8px);
+  background-size: 28px 28px;
+  opacity: .62;
+}
+
 .public-page-hero {
-  background-color: var(--portal-dark, #071923);
+  background-color: #073b37;
   background-image:
-    radial-gradient(rgba(255,255,255,.36) 1px, transparent 1px),
-    linear-gradient(110deg, rgba(4, 19, 29, .76), rgba(4, 30, 38, .58)),
+    radial-gradient(rgba(255,255,255,.2) .8px, transparent .8px),
+    linear-gradient(112deg, color-mix(in srgb, var(--portal-dark, #071923) 78%, transparent) 0%, color-mix(in srgb, var(--portal-accent, #0d9488) 55%, transparent) 54%, color-mix(in srgb, var(--portal-accent, #0d9488) 62%, transparent) 100%),
     url('/images/gedung-sate-hero.jpg');
   background-size: 28px 28px, cover, cover;
-  background-position: center, center, center 54%;
+  background-position: center, center, center 52%;
   background-repeat: repeat, no-repeat, no-repeat;
 }
 
 .public-page-hero__pattern {
-  background: linear-gradient(180deg, transparent 60%, rgba(3, 18, 27, .18));
+  background: radial-gradient(ellipse at 50% 100%, color-mix(in srgb, var(--portal-accent, #0d9488) 19%, transparent), transparent 68%);
 }
 
 /* Dinas and Kelurahan use the same public modules; only their design tokens differ. */
