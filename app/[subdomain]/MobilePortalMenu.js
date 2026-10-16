@@ -4,11 +4,15 @@ import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
 import Link from 'next/link'
 import Image from 'next/image'
+import { usePathname } from 'next/navigation'
 import { Menu, X, ArrowUpRight, ChevronDown } from 'lucide-react'
 
 export default function MobilePortalMenu({ website, links, infoLinks = [], showContact = true }) {
   const [open, setOpen] = useState(false)
+  const pathname = usePathname()
   const base = `/${website.subdomain}`
+  const isCurrent = (href) => href === base ? pathname === base : pathname === href || pathname.startsWith(`${href}/`)
+  const infoCurrent = infoLinks.some(({ href }) => isCurrent(href))
 
   useEffect(() => {
     if (!open) return
@@ -35,11 +39,11 @@ export default function MobilePortalMenu({ website, links, infoLinks = [], showC
           <button type="button" onClick={() => setOpen(false)} aria-label="Tutup menu" className="ml-3 flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-slate-300 hover:bg-white/10 hover:text-white"><X className="h-5 w-5"/></button>
         </div>
         <nav aria-label="Menu portal" className="min-h-0 flex-1 space-y-2 overflow-y-auto overscroll-contain py-5">
-          {links.map(({ label, href }, index) => <Link key={href} href={href} onClick={() => setOpen(false)} className="flex items-center justify-between rounded-xl border border-white/10 px-4 py-3.5 text-sm font-semibold text-slate-100 transition hover:border-teal-400/40 hover:bg-white/5 hover:text-teal-200"><span className="flex min-w-0 items-center gap-3"><span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-teal-500/15 text-xs font-bold text-teal-200">{String(index + 1).padStart(2, '0')}</span><span className="truncate">{label}</span></span><ArrowUpRight className="h-4 w-4 shrink-0 text-slate-400"/></Link>)}
+          {links.map(({ label, href }, index) => <Link key={href} href={href} aria-current={isCurrent(href) ? 'page' : undefined} onClick={() => setOpen(false)} className="flex items-center justify-between rounded-xl border border-white/10 px-4 py-3.5 text-sm font-semibold text-slate-100 transition hover:border-teal-400/40 hover:bg-white/5 hover:text-teal-200"><span className="flex min-w-0 items-center gap-3"><span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-teal-500/15 text-xs font-bold text-teal-200">{String(index + 1).padStart(2, '0')}</span><span className="truncate">{label}</span></span><ArrowUpRight className="h-4 w-4 shrink-0 text-slate-400"/></Link>)}
           {infoLinks.length > 0 && <details className="group overflow-hidden rounded-xl border border-white/10 bg-white/[0.03]">
-            <summary className="flex cursor-pointer list-none items-center justify-between px-4 py-3.5 text-sm font-semibold text-slate-100">Kabar & Informasi<ChevronDown className="h-4 w-4 transition-transform group-open:rotate-180"/></summary>
+            <summary aria-current={infoCurrent ? 'page' : undefined} className="flex cursor-pointer list-none items-center justify-between px-4 py-3.5 text-sm font-semibold text-slate-100">Kabar & Informasi<ChevronDown className="h-4 w-4 transition-transform group-open:rotate-180"/></summary>
             <div className="space-y-1 border-t border-white/10 p-2">
-              {infoLinks.map(({ label, href }) => <Link key={href} href={href} onClick={() => setOpen(false)} className="flex items-center justify-between rounded-lg px-3 py-2.5 text-sm text-slate-300 transition hover:bg-white/10 hover:text-teal-200">{label}<ArrowUpRight className="h-4 w-4"/></Link>)}
+              {infoLinks.map(({ label, href }) => <Link key={href} href={href} aria-current={isCurrent(href) ? 'page' : undefined} onClick={() => setOpen(false)} className="flex items-center justify-between rounded-lg px-3 py-2.5 text-sm text-slate-300 transition hover:bg-white/10 hover:text-teal-200">{label}<ArrowUpRight className="h-4 w-4"/></Link>)}
             </div>
           </details>}
         </nav>

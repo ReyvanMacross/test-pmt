@@ -1,6 +1,7 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
+import { createPortal } from 'react-dom'
 import Link from 'next/link'
 import { ArrowRight, BellRing, CalendarDays, ExternalLink, FileText, X } from 'lucide-react'
 
@@ -13,39 +14,52 @@ function formatDate(value) {
 
 export default function OfficialAnnouncementPopup({ website, announcements = [], enabled = true }) {
   const [open, setOpen] = useState(false)
+  const [mounted, setMounted] = useState(false)
   const visibleAnnouncements = announcements.slice(0, 4)
   const allAnnouncementsHref = `/${website.subdomain}/pengumuman`
 
   useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  useEffect(() => {
     if (!enabled || visibleAnnouncements.length === 0) return
-    const key = `portal-announcements-seen:${website.subdomain}`
+    const key = `portal-announcements-seen:v2:${website.subdomain}`
     try {
       if (window.sessionStorage.getItem(key)) return
-      window.sessionStorage.setItem(key, '1')
     } catch {
       // Keep the announcement available if browser storage is disabled.
     }
     setOpen(true)
   }, [enabled, visibleAnnouncements.length, website.subdomain])
 
+  const closePopup = useCallback(() => {
+    try {
+      window.sessionStorage.setItem(`portal-announcements-seen:v2:${website.subdomain}`, '1')
+    } catch {
+      // Closing still works when browser storage is disabled.
+    }
+    setOpen(false)
+  }, [website.subdomain])
+
   useEffect(() => {
     if (!open) return
     const previousOverflow = document.body.style.overflow
     document.body.style.overflow = 'hidden'
     const closeOnEscape = (event) => {
-      if (event.key === 'Escape') setOpen(false)
+      if (event.key === 'Escape') closePopup()
     }
     window.addEventListener('keydown', closeOnEscape)
     return () => {
       document.body.style.overflow = previousOverflow
       window.removeEventListener('keydown', closeOnEscape)
     }
-  }, [open])
+  }, [open, closePopup])
 
-  if (!open) return null
+  if (!open || !mounted) return null
 
-  return <div className="fixed inset-0 z-[1200] flex items-center justify-center bg-slate-950/65 p-4 backdrop-blur-sm sm:p-6" role="presentation">
-    <button type="button" aria-label="Tutup pengumuman" onClick={() => setOpen(false)} className="absolute inset-0 h-full w-full cursor-default"/>
+  return createPortal(<div data-portal-template={website.template_slug || 'kecamatan'} className="fixed inset-0 z-[1200] flex items-center justify-center bg-slate-950/65 p-4 backdrop-blur-sm sm:p-6" role="presentation">
+    <button type="button" aria-label="Tutup pengumuman" onClick={closePopup} className="absolute inset-0 h-full w-full cursor-default"/>
     <section role="dialog" aria-modal="true" aria-labelledby="official-announcement-title" className="relative z-10 flex max-h-[min(86svh,52rem)] w-full max-w-2xl animate-[announcement-in_.22s_ease-out] flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl">
       <header className="relative overflow-hidden bg-[#071923] px-5 py-6 text-white sm:px-8 sm:py-7">
         <div aria-hidden="true" className="absolute inset-0 bg-gradient-to-br from-teal-700/30 via-transparent to-transparent"/>
@@ -57,7 +71,7 @@ export default function OfficialAnnouncementPopup({ website, announcements = [],
             <p className="mt-1 text-sm text-slate-300">Informasi penting terbaru untuk masyarakat.</p>
           </div>
         </div>
-        <button type="button" onClick={() => setOpen(false)} aria-label="Tutup" className="absolute right-4 top-4 flex h-9 w-9 items-center justify-center rounded-full border border-white/15 text-slate-200 transition hover:bg-white/10 hover:text-white"><X className="h-4 w-4"/></button>
+        <button type="button" onClick={closePopup} aria-label="Tutup" className="absolute right-4 top-4 flex h-9 w-9 items-center justify-center rounded-full border border-white/15 text-slate-200 transition hover:bg-white/10 hover:text-white"><X className="h-4 w-4"/></button>
       </header>
 
       <div className="min-h-0 flex-1 space-y-3 overflow-y-auto p-4 sm:p-6">
@@ -70,9 +84,9 @@ export default function OfficialAnnouncementPopup({ website, announcements = [],
       </div>
 
       <footer className="flex flex-col-reverse gap-2 border-t border-slate-100 bg-white p-4 sm:flex-row sm:justify-end sm:p-5">
-        <button type="button" onClick={() => setOpen(false)} className="inline-flex min-h-11 items-center justify-center rounded-xl border border-slate-200 px-5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50">Tutup</button>
-        <Link href={allAnnouncementsHref} onClick={() => setOpen(false)} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-teal-600 px-5 text-sm font-bold text-white transition hover:bg-teal-500">Semua pengumuman<ArrowRight className="h-4 w-4"/></Link>
+        <button type="button" onClick={closePopup} className="inline-flex min-h-11 items-center justify-center rounded-xl border border-slate-200 px-5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50">Tutup</button>
+        <Link href={allAnnouncementsHref} onClick={closePopup} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-teal-600 px-5 text-sm font-bold text-white transition hover:bg-teal-500">Semua pengumuman<ArrowRight className="h-4 w-4"/></Link>
       </footer>
     </section>
-  </div>
+  </div>, document.body)
 }

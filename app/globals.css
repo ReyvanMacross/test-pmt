@@ -128,17 +128,8 @@ body .fixed.top-20.right-4 > :where(div, p) p:last-child {
   box-shadow: 0 12px 28px rgb(15 23 42 / 8%);
 }
 
-.public-home-hero__content {
-  animation: portal-fade-up 720ms cubic-bezier(.2, .75, .25, 1) both;
-}
-
-.public-home-hero__image {
-  animation: portal-hero-image-in 700ms ease-out both;
-}
-
-@keyframes portal-hero-image-in {
-  from { opacity: 0; transform: scale(1.025); }
-  to { opacity: .5; transform: scale(1); }
+.public-home-hero__copy {
+  animation: portal-fade-up 620ms cubic-bezier(.2, .75, .25, 1) both;
 }
 
 .public-home-hero__base {
@@ -159,7 +150,7 @@ body .fixed.top-20.right-4 > :where(div, p) p:last-child {
   background-color: #073b37;
   background-image:
     radial-gradient(rgba(255,255,255,.2) .8px, transparent .8px),
-    linear-gradient(112deg, color-mix(in srgb, var(--portal-dark, #071923) 78%, transparent) 0%, color-mix(in srgb, var(--portal-accent, #0d9488) 55%, transparent) 54%, color-mix(in srgb, var(--portal-accent, #0d9488) 62%, transparent) 100%),
+    linear-gradient(112deg, color-mix(in srgb, var(--portal-dark, #071923) 56%, transparent) 0%, color-mix(in srgb, color-mix(in srgb, var(--portal-dark, #071923) 42%, var(--portal-accent, #0d9488) 58%) 48%, transparent) 54%, color-mix(in srgb, color-mix(in srgb, var(--portal-dark, #071923) 34%, var(--portal-accent, #0d9488) 66%) 52%, transparent) 100%),
     url('/images/gedung-sate-hero.jpg');
   background-size: 28px 28px, cover, cover;
   background-position: center, center, center 52%;
@@ -216,6 +207,19 @@ body .fixed.top-20.right-4 > :where(div, p) p:last-child {
 
 [data-portal-template="dinas"] :is([class~="text-teal-100"], [class~="text-teal-200"], [class~="text-teal-300"], [class~="text-teal-400"]),
 [data-portal-template="kelurahan"] :is([class~="text-teal-100"], [class~="text-teal-200"], [class~="text-teal-300"], [class~="text-teal-400"]) { color: var(--portal-accent-on-dark) !important; }
+
+/* Keep public navigation active and hover states aligned with each template palette. */
+[data-portal-template="dinas"] nav [aria-current="page"],
+[data-portal-template="dinas"] nav summary[aria-current="page"],
+[data-portal-template="dinas"] nav [class~="hover:text-teal-300"]:hover,
+[data-portal-template="dinas"] nav [class~="hover:text-teal-200"]:hover,
+[data-portal-template="kelurahan"] nav [aria-current="page"],
+[data-portal-template="kelurahan"] nav summary[aria-current="page"],
+[data-portal-template="kelurahan"] nav [class~="hover:text-teal-300"]:hover,
+[data-portal-template="kelurahan"] nav [class~="hover:text-teal-200"]:hover { color: var(--portal-accent-on-dark) !important; }
+
+[data-portal-template="dinas"] nav [aria-current="page"]::after,
+[data-portal-template="kelurahan"] nav [aria-current="page"]::after { background-color: var(--portal-accent) !important; }
 
 [data-portal-template="dinas"] :is([class~="bg-teal-50"], [class~="bg-teal-100"]),
 [data-portal-template="kelurahan"] :is([class~="bg-teal-50"], [class~="bg-teal-100"]) { background-color: var(--portal-accent-badge) !important; }
