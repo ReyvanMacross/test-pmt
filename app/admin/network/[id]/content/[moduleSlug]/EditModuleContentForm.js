@@ -104,24 +104,6 @@ export default function EditModuleContentForm({ website, moduleMeta, initialCont
           accept: 'image/png, image/jpeg, image/jpg, image/webp, application/pdf,.doc,.docx,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document',
           defaultTitle: `Informasi Serta Merta ${website.name || ''}`.trim(),
         }
-      case 'permohonan-informasi-online':
-        return {
-          sectionTitle: 'Informasi & Alur Permohonan Informasi Online',
-          sectionDesc: 'Pengaturan alur permohonan daring, SOP tata cara, dan berkas formulir permohonan',
-          uploadLabel: 'Formulir / Bagan Prosedur Permohonan Informasi',
-          uploadHint: 'Unggah Formulir / Bagan Prosedur (PDF, PNG, JPG, WEBP - Maks. 5MB)',
-          accept: 'image/png, image/jpeg, image/jpg, image/webp, application/pdf,.doc,.docx,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-          defaultTitle: `Permohonan Informasi Online ${website.name || ''}`.trim(),
-        }
-      case 'pengajuan-keberatan-online':
-        return {
-          sectionTitle: 'Informasi & Alur Pengajuan Keberatan Online',
-          sectionDesc: 'Pengaturan naskah layanan keberatan informasi publik dan berkas formulir pengajuan keberatan',
-          uploadLabel: 'Formulir / Bagan Prosedur Pengajuan Keberatan',
-          uploadHint: 'Unggah Formulir / Bagan Keberatan (PDF, PNG, JPG, WEBP - Maks. 5MB)',
-          accept: 'image/png, image/jpeg, image/jpg, image/webp, application/pdf,.doc,.docx,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-          defaultTitle: `Pengajuan Keberatan Online ${website.name || ''}`.trim(),
-        }
       case 'informasi':
         return {
           sectionTitle: 'Informasi & Berkas Infografis / Publikasi',

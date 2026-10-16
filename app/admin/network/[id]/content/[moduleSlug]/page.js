@@ -9,8 +9,8 @@ import PublicDocumentManager from './PublicDocumentManager'
 const PUBLIC_DOCUMENT_MODULES = new Set([
   'ppid', 'ppid-utama', 'daftar-informasi-publik', 'daftar-informasi-dikecualikan',
   'informasi-wajib-berkala', 'informasi-tersedia-setiap-saat', 'informasi-serta-merta',
-  'permohonan-informasi-online', 'pengajuan-keberatan-online',
 ])
+const REMOVED_MODULES = new Set(['permohonan-informasi-online', 'pengajuan-keberatan-online'])
 
 export async function generateMetadata({ params }) {
   const { id, moduleSlug } = await params
@@ -29,6 +29,7 @@ export async function generateMetadata({ params }) {
 
 export default async function EditModuleContentPage({ params }) {
   const { id, moduleSlug } = await params
+  if (REMOVED_MODULES.has(moduleSlug)) notFound()
   const session = await getSession()
   if (!session) redirect('/login')
 

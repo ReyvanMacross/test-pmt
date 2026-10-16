@@ -6,7 +6,7 @@ import { ArrowLeft, CalendarDays, Check, Download, ExternalLink, FileText, Penci
 import { deletePublicDocumentItemAction, savePublicDocumentItemAction } from '../actions'
 
 const inputClass = 'w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/15'
-const documentModules = new Set(['ppid','ppid-utama','daftar-informasi-publik','daftar-informasi-dikecualikan','informasi-wajib-berkala','informasi-tersedia-setiap-saat','informasi-serta-merta','permohonan-informasi-online','pengajuan-keberatan-online'])
+const documentModules = new Set(['ppid','ppid-utama','daftar-informasi-publik','daftar-informasi-dikecualikan','informasi-wajib-berkala','informasi-tersedia-setiap-saat','informasi-serta-merta'])
 
 function formatMonth(value) {
   if (!value) return 'Tanggal pembaruan belum diisi'

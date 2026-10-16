@@ -185,7 +185,7 @@ export default async function PublicModulePage({ params }) {
           category: entry.category,
           categoryLabel: entry.label,
           title: 'Portal Layanan Informasi Publik (PPID Utama Kota Bandung)',
-          description: 'Kanal terpadu permohonan informasi publik, pengajuan keberatan, dan layanan informasi berkala Kota Bandung.',
+          description: 'Portal PPID utama Kota Bandung untuk layanan dan informasi publik.',
           moduleDescription: '',
           updatedAt: content?.updated_at || null,
           attachments: [],

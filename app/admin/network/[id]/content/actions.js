@@ -11,6 +11,8 @@ import { CONTENT_MODULES } from '@/lib/content-modules'
 import { removePortalFile, uploadPortalFile } from '@/lib/storage'
 import { PNS_RANK_OPTIONS } from '@/lib/pns-ranks'
 
+const REMOVED_MODULES = new Set(['permohonan-informasi-online', 'pengajuan-keberatan-online'])
+
 // ─── Helper Otorisasi Website ─────────────────────────────────────────────────
 async function authorizeWebsite(websiteId, session) {
   const res = await query(
@@ -76,6 +78,7 @@ async function getOrCreateMenuItemId(slug) {
 export async function saveModuleContentAction(websiteId, moduleSlug, formData) {
   let uploadedFile = null
   try {
+    if (REMOVED_MODULES.has(moduleSlug)) return { error: 'Modul ini sudah tidak digunakan.' }
     const session = await getSession()
     if (!session) return { error: 'Sesi berakhir. Silakan masuk kembali.' }
     await authorizeWebsite(websiteId, session)
@@ -248,7 +251,6 @@ export async function saveModuleContentAction(websiteId, moduleSlug, formData) {
 const PUBLIC_DOCUMENT_EDITOR_MODULES = new Set([
   'ppid', 'ppid-utama', 'daftar-informasi-publik', 'daftar-informasi-dikecualikan',
   'informasi-wajib-berkala', 'informasi-tersedia-setiap-saat', 'informasi-serta-merta',
-  'permohonan-informasi-online', 'pengajuan-keberatan-online',
 ])
 
 async function getPublicDocumentContent(websiteId, moduleSlug) {

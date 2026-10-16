@@ -88,7 +88,6 @@ export default function ContactPage({ portal }) {
   const mapEmbed = getMapEmbed(profile)
   const directionsHref = getDirectionsHref(profile)
   const serviceEnabled = moduleVisibility.layanan !== false
-  const informationRequestEnabled = moduleVisibility['permohonan-informasi-online'] !== false
   const instagram = socialHref(profile?.instagram_username, 'instagram.com')
   const facebook = socialHref(profile?.facebook_page_name, 'facebook.com')
   const youtube = socialHref(profile?.youtube_channel_url, 'youtube.com')
@@ -128,11 +127,11 @@ export default function ContactPage({ portal }) {
           <div className="relative space-y-4">
             <span className="flex h-11 w-11 items-center justify-center rounded-2xl border border-teal-400/30 bg-teal-500/20 text-teal-300"><ShieldCheck className="h-5 w-5"/></span>
             <h2 className="text-xl font-extrabold leading-snug sm:text-2xl">Layanan Publik &amp; Informasi Warga</h2>
-            <p className="text-xs leading-relaxed text-slate-300 sm:text-sm">Temukan prosedur layanan administrasi, persyaratan berkas, dan kanal permohonan informasi resmi {website.name}.</p>
+            <p className="text-xs leading-relaxed text-slate-300 sm:text-sm">Temukan prosedur layanan administrasi, persyaratan berkas, dan informasi publik resmi {website.name}.</p>
             <div className="space-y-2 rounded-xl border border-white/10 bg-white/5 p-4">
               <p className="flex items-center gap-2 text-xs font-bold text-teal-300"><ShieldCheck className="h-4 w-4"/>Kanal Terpadu Layanan Online</p>
               <p className="text-[11px] leading-relaxed text-slate-300">Akses katalog layanan dan informasi publik yang dikelola melalui modul portal resmi.</p>
-              <div className="flex flex-wrap gap-x-4 gap-y-2 pt-1 text-xs font-semibold">{serviceEnabled && <Link href={`/${website.subdomain}/layanan`} className="text-teal-200 hover:text-white">Katalog layanan <ArrowUpRight className="inline h-3.5 w-3.5"/></Link>}{informationRequestEnabled && <Link href={`/${website.subdomain}/permohonan-informasi-online`} className="text-teal-200 hover:text-white">Permohonan informasi <ArrowUpRight className="inline h-3.5 w-3.5"/></Link>}</div>
+              <div className="flex flex-wrap gap-x-4 gap-y-2 pt-1 text-xs font-semibold">{serviceEnabled && <Link href={`/${website.subdomain}/layanan`} className="text-teal-200 hover:text-white">Katalog layanan <ArrowUpRight className="inline h-3.5 w-3.5"/></Link>}</div>
             </div>
           </div>
           {serviceEnabled && <div className="relative border-t border-white/10 pt-4"><Link href={`/${website.subdomain}/layanan`} className="group flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-teal-600 px-5 py-3 text-center text-xs font-bold text-white shadow-lg shadow-teal-500/20 transition hover:bg-teal-500 sm:text-sm">Menuju Halaman Layanan Publik <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1"/></Link></div>}
