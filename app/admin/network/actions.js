@@ -37,10 +37,16 @@ export async function createWebsiteAction(formData) {
   const name = formData.get('name')?.trim()
   const subdomain = formData.get('subdomain')?.trim().toLowerCase()
   const template_id = formData.get('template_id')
+  let institution_type = formData.get('category')?.trim().toLowerCase()
   const description = formData.get('description')?.trim() || null
 
   if (!name || !subdomain || !template_id) {
     return { error: 'Nama, subdomain, dan template wajib diisi.' }
+  }
+
+  const allowedInstitutionTypes = ['dinas', 'kecamatan', 'kelurahan']
+  if (institution_type && !allowedInstitutionTypes.includes(institution_type)) {
+    return { error: 'Kategori perangkat daerah tidak valid.' }
   }
 
   const accountRole = access?.role || session.role
@@ -48,12 +54,16 @@ export async function createWebsiteAction(formData) {
   if (accountRole !== 'super-admin' && !expectedTemplate) {
     return { error: 'Role akun Anda tidak memiliki template website yang dapat digunakan.' }
   }
+  const selectedTemplate = await query('SELECT slug FROM templates WHERE id = $1 AND is_active = true LIMIT 1', [template_id])
+  if (!selectedTemplate.rows[0]) return { error: 'Template yang dipilih tidak tersedia.' }
   if (expectedTemplate) {
-    const selectedTemplate = await query('SELECT slug FROM templates WHERE id = $1 AND is_active = true LIMIT 1', [template_id])
     if (selectedTemplate.rows[0]?.slug !== expectedTemplate) {
       return { error: `Akun ${accountRole.replace('admin-', '')} hanya dapat membuat website dengan template ${expectedTemplate}.` }
     }
   }
+
+  institution_type ||= selectedTemplate.rows[0].slug
+  if (!allowedInstitutionTypes.includes(institution_type)) return { error: 'Kategori perangkat daerah tidak valid.' }
 
   // Validasi format subdomain
   const regex = /^[a-z0-9-]+$/
@@ -74,10 +84,10 @@ export async function createWebsiteAction(formData) {
 
     // Insert ke tabel websites
     const res = await query(
-      `INSERT INTO websites (user_id, name, subdomain, template_id, description, status)
-       VALUES ($1, $2, $3, $4, $5, 'active')
+      `INSERT INTO websites (user_id, name, subdomain, template_id, institution_type, description, status)
+       VALUES ($1, $2, $3, $4, $5, $6, 'active')
        RETURNING id, name`,
-      [session.id, name, subdomain, template_id, description]
+      [session.id, name, subdomain, template_id, institution_type, description]
     )
 
     newWebsite = res.rows[0]
