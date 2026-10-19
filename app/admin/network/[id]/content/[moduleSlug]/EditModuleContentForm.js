@@ -143,6 +143,8 @@ export default function EditModuleContentForm({ website, moduleMeta, initialCont
   const [selectedFile, setSelectedFile] = useState(null)
   const [filePreview, setFilePreview] = useState(existingAttachment?.url || null)
   const [isRemovedFile, setIsRemovedFile] = useState(false)
+  const [pageHeroFile, setPageHeroFile] = useState(null)
+  const [removePageHero, setRemovePageHero] = useState(false)
   const [isDragging, setIsDragging] = useState(false)
   const [saving, setSaving] = useState(false)
   const [toast, setToast] = useState(null)
@@ -289,6 +291,8 @@ export default function EditModuleContentForm({ website, moduleMeta, initialCont
       } else if (isRemovedFile) {
         fd.set('remove_file', 'true')
       }
+      if (pageHeroFile) fd.set('page_hero_file', pageHeroFile)
+      if (removePageHero) fd.set('remove_page_hero', 'true')
 
       const res = await saveModuleContentAction(website.id, moduleMeta.slug, fd)
 
@@ -296,6 +300,8 @@ export default function EditModuleContentForm({ website, moduleMeta, initialCont
         showToast('error', res.error)
       } else {
         showToast('success', `Perubahan ${moduleMeta.title.toLowerCase()} berhasil disimpan.`)
+        setPageHeroFile(null)
+        setRemovePageHero(false)
         router.refresh()
       }
     } catch (err) {
@@ -413,6 +419,7 @@ export default function EditModuleContentForm({ website, moduleMeta, initialCont
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
+          {moduleMeta.slug !== 'beranda' && <section className="rounded-xl border border-slate-200 bg-slate-50 p-4 sm:p-5"><h3 className="text-sm font-bold text-slate-900">Gambar Header Halaman</h3><p className="mt-1 text-xs text-slate-500">Atur gambar latar khusus untuk halaman {moduleMeta.title}. Beranda tetap menggunakan Hero Slider.</p>{!removePageHero && !pageHeroFile && initialContent.metadata?.page_hero_image?.url && <img src={initialContent.metadata.page_hero_image.url} alt="Gambar header saat ini" className="mt-3 h-32 w-full max-w-xl rounded-lg object-cover"/>}<input type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => { setPageHeroFile(event.target.files?.[0] || null); setRemovePageHero(false) }} className="mt-3 block w-full max-w-xl text-sm text-slate-600 file:mr-3 file:rounded-lg file:border-0 file:bg-white file:px-3 file:py-2 file:text-xs file:font-semibold file:text-slate-700"/><p className="mt-1 text-[11px] text-slate-500">JPG, PNG, WebP · maksimal 5 MB</p>{(initialContent.metadata?.page_hero_image?.url || pageHeroFile) && <button type="button" onClick={() => { setPageHeroFile(null); setRemovePageHero(true) }} className="mt-2 text-xs font-semibold text-rose-600">Hapus gambar header khusus</button>}</section>}
           {/* 1. Judul Konten */}
           <div className={moduleMeta.slug === 'profil-pimpinan' ? 'grid grid-cols-1 gap-4 md:grid-cols-2' : ''}>
             <div>

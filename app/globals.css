@@ -151,7 +151,7 @@ body .fixed.top-20.right-4 > :where(div, p) p:last-child {
   background-image:
     radial-gradient(rgba(255,255,255,.2) .8px, transparent .8px),
     linear-gradient(112deg, color-mix(in srgb, var(--portal-dark, #071923) 56%, transparent) 0%, color-mix(in srgb, color-mix(in srgb, var(--portal-dark, #071923) 42%, var(--portal-accent, #0d9488) 58%) 48%, transparent) 54%, color-mix(in srgb, color-mix(in srgb, var(--portal-dark, #071923) 34%, var(--portal-accent, #0d9488) 66%) 52%, transparent) 100%),
-    url('/images/gedung-sate-hero.jpg');
+    var(--public-page-hero-image, url('/images/gedung-sate-hero.jpg'));
   background-size: 28px 28px, cover, cover;
   background-position: center, center, center 52%;
   background-repeat: repeat, no-repeat, no-repeat;

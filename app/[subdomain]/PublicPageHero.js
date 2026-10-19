@@ -1,5 +1,6 @@
-export default function PublicPageHero({ eyebrow, title, description, links = [], children }) {
-  return <header className="public-page-hero relative isolate overflow-hidden border-b border-white/10 px-5 py-14 text-center text-white sm:px-6 sm:py-16 lg:py-20">
+export default function PublicPageHero({ eyebrow, title, description, links = [], children, image }) {
+  const style = image ? { '--public-page-hero-image': `url("${image.replaceAll('"', '')}")` } : undefined
+  return <header style={style} className="public-page-hero relative isolate overflow-hidden border-b border-white/10 px-5 py-14 text-center text-white sm:px-6 sm:py-16 lg:py-20">
     <div aria-hidden="true" className="public-page-hero__pattern pointer-events-none absolute inset-0" />
     <div className="relative mx-auto max-w-4xl">
       {eyebrow && <span className="inline-flex rounded-lg border border-teal-300/30 bg-teal-400/10 px-4 py-1.5 text-[10px] font-extrabold uppercase tracking-[.18em] text-teal-200 sm:text-xs">{eyebrow}</span>}

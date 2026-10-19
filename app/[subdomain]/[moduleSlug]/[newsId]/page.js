@@ -32,7 +32,7 @@ export default async function PublicNewsArticlePage({ params }) {
 
   return <div className="public-portal min-h-screen bg-slate-50 text-slate-900" data-portal-template={portal.website.template_slug || 'kecamatan'}>
     <PortalHeader website={portal.website} profile={portal.profile} moduleVisibility={portal.moduleVisibility} announcements={portal.announcements}/>
-    <PublicPageHero eyebrow={article.category || 'Kabar Wilayah'} title={article.title} description={`${article.author || `Redaksi ${portal.website.name}`} · ${formatDate(article.published_at || article.created_at)}`}/>
+    <PublicPageHero image={portal.contents.berita?.metadata?.page_hero_image?.url} eyebrow={article.category || 'Kabar Wilayah'} title={article.title} description={`${article.author || `Redaksi ${portal.website.name}`} · ${formatDate(article.published_at || article.created_at)}`}/>
     <main className="mx-auto grid w-full max-w-6xl gap-8 px-4 py-8 sm:px-6 sm:py-10 lg:grid-cols-12">
       <nav aria-label="Breadcrumb" className="flex flex-wrap items-center gap-2 text-xs text-slate-500 lg:col-span-12"><Link href={`/${subdomain}`} className="hover:text-teal-700">Beranda</Link><span>/</span><Link href={`/${subdomain}/berita`} className="hover:text-teal-700">Kabar Berita</Link><span>/</span><span className="max-w-[45vw] truncate text-slate-700">Detail Berita</span></nav>
       <article className="min-w-0 space-y-7 rounded-3xl border border-slate-200/80 bg-white p-5 shadow-sm sm:p-8 lg:col-span-8">

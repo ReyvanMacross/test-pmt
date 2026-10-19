@@ -81,14 +81,18 @@ export async function addVideoUrlAction(websiteId, albumId, formData) {
     if (description && description.length > 5000) return { error: 'Deskripsi video maksimal 5.000 karakter.' }
     let parsed
     try { parsed = new URL(rawUrl) } catch { return { error: 'Masukkan URL video yang valid.' } }
-    if (!['https:', 'http:'].includes(parsed.protocol)) return { error: 'URL video harus menggunakan http atau https.' }
+    if (parsed.protocol !== 'https:') return { error: 'Tautan YouTube harus menggunakan HTTPS.' }
     const hostname = parsed.hostname.toLowerCase().replace(/^www\./, '')
-    const allowed = ['youtube.com', 'youtu.be', 'youtube-nocookie.com', 'tiktok.com', 'instagram.com', 'x.com', 'twitter.com']
-    if (!allowed.some((domain) => hostname === domain || hostname.endsWith(`.${domain}`))) return { error: 'Tautan hanya mendukung YouTube, TikTok, Instagram, atau X.' }
+    const isYoutube = ['youtube.com', 'youtu.be', 'youtube-nocookie.com'].includes(hostname)
+    if (!isYoutube) return { error: 'Tautan video hanya mendukung YouTube.' }
+    const videoId = hostname === 'youtu.be'
+      ? parsed.pathname.split('/').filter(Boolean)[0]
+      : parsed.searchParams.get('v') || parsed.pathname.match(/^\/(?:shorts|embed|live)\/([^/?]+)/)?.[1]
+    if (!videoId || !/^[\w-]{6,20}$/.test(videoId)) return { error: 'Tautan YouTube tidak memuat ID video yang valid.' }
     const albumResult = await query("SELECT id, title FROM gallery_albums WHERE id = $1 AND website_id = $2 AND type = 'video' LIMIT 1", [albumId, website.id])
     const album = albumResult.rows[0]
     if (!album) return { error: 'Album video tidak ditemukan.' }
-    const type = ['youtube.com', 'youtu.be', 'youtube-nocookie.com'].some((domain) => hostname === domain || hostname.endsWith(`.${domain}`)) ? 'youtube' : 'video'
+    const type = 'youtube'
     const client = await pool.connect()
     let item
     try {

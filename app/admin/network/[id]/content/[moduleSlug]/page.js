@@ -5,6 +5,7 @@ import { query } from '@/lib/db'
 import { CONTENT_MODULES } from '@/lib/content-modules'
 import EditModuleContentForm from './EditModuleContentForm'
 import PublicDocumentManager from './PublicDocumentManager'
+import PageHeroImageSettings from '../PageHeroImageSettings'
 
 const PUBLIC_DOCUMENT_MODULES = new Set([
   'ppid', 'ppid-utama', 'daftar-informasi-publik', 'daftar-informasi-dikecualikan',
@@ -91,7 +92,7 @@ export default async function EditModuleContentPage({ params }) {
   }
 
   if (PUBLIC_DOCUMENT_MODULES.has(moduleMeta.slug)) {
-    return <PublicDocumentManager website={website} moduleMeta={moduleMeta} initialContent={initialContent}/>
+    return <><PageHeroImageSettings website={website} moduleSlug={moduleMeta.slug} moduleTitle={moduleMeta.title} initialImage={initialContent.metadata?.page_hero_image}/><PublicDocumentManager website={website} moduleMeta={moduleMeta} initialContent={initialContent}/></>
   }
 
   return (

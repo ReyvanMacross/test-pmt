@@ -4,6 +4,8 @@ import { getSession } from '@/lib/auth'
 import { getCurrentAdminAccess, hasAdminPermission } from '@/lib/admin-access'
 import { query } from '@/lib/db'
 import GalleryVideoAlbumsClient from './GalleryVideoAlbumsClient'
+import PageHeroImageSettings from '../PageHeroImageSettings'
+import { getPageHeroImage } from '@/lib/page-hero'
 
 export async function generateMetadata({ params }) {
   const { id } = await params
@@ -28,5 +30,5 @@ export default async function GalleryVideoPage({ params }) {
      WHERE ga.website_id = $1 AND ga.type = 'video'
      GROUP BY ga.id ORDER BY ga.created_at DESC`, [website.id]
   )
-  return <GalleryVideoAlbumsClient website={website} initialAlbums={albums.rows} />
+  return <><PageHeroImageSettings website={website} moduleSlug="galeri-video" moduleTitle="Galeri Video" initialImage={await getPageHeroImage(website.id, 'galeri-video')}/><GalleryVideoAlbumsClient website={website} initialAlbums={albums.rows} /></>
 }

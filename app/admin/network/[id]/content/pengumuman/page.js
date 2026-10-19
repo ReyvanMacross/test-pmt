@@ -4,6 +4,8 @@ import { getSession } from '@/lib/auth'
 import { getCurrentAdminAccess, hasAdminPermission } from '@/lib/admin-access'
 import { query } from '@/lib/db'
 import AnnouncementManagerClient from './AnnouncementManagerClient'
+import PageHeroImageSettings from '../PageHeroImageSettings'
+import { getPageHeroImage } from '@/lib/page-hero'
 
 export async function generateMetadata({ params }) {
   const { id } = await params
@@ -26,5 +28,5 @@ export default async function AnnouncementManagementPage({ params }) {
      FROM announcements WHERE website_id = $1 ORDER BY publish_date DESC, created_at DESC`, [website.id]
   )
   const listVersion = JSON.stringify(announcements.rows.map((item) => [item.id, item.updated_at]))
-  return <AnnouncementManagerClient key={listVersion} website={website} initialAnnouncements={announcements.rows}/>
+  return <><PageHeroImageSettings website={website} moduleSlug="pengumuman" moduleTitle="Pengumuman" initialImage={await getPageHeroImage(website.id, 'pengumuman')}/><AnnouncementManagerClient key={listVersion} website={website} initialAnnouncements={announcements.rows}/></>
 }

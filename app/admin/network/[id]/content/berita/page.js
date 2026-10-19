@@ -4,6 +4,7 @@ import { getSession } from '@/lib/auth'
 import { getCurrentAdminAccess, hasAdminPermission } from '@/lib/admin-access'
 import { query } from '@/lib/db'
 import NewsManagementClient from './NewsManagementClient'
+import PageHeroImageSettings from '../PageHeroImageSettings'
 
 export async function generateMetadata({ params }) {
   const { id } = await params
@@ -36,5 +37,6 @@ export default async function NewsManagementPage({ params }) {
     [id]
   )
 
-  return <NewsManagementClient website={website} initialNews={result.rows} />
+  const heroResult = await query('SELECT c.metadata FROM contents c JOIN menu_items m ON m.id = c.menu_item_id WHERE c.website_id = $1 AND m.slug = $2 LIMIT 1', [website.id, 'berita'])
+  return <><PageHeroImageSettings website={website} moduleSlug="berita" moduleTitle="Kabar & Berita" initialImage={heroResult.rows[0]?.metadata?.page_hero_image}/><NewsManagementClient website={website} initialNews={result.rows} /></>
 }
