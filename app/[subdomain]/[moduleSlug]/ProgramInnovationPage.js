@@ -3,11 +3,12 @@
 import { useMemo, useState } from 'react'
 import Link from 'next/link'
 import { ArrowUpRight, FileText, Lightbulb, Search, Sparkles } from 'lucide-react'
+import { sanitizeRichHtml } from '@/lib/rich-text'
 
 function Paragraphs({ value }) {
-  const paragraphs = String(value || '').split(/\n+/).map((line) => line.trim()).filter(Boolean)
-  if (!paragraphs.length) return <p className="text-sm text-slate-500">Informasi program belum tersedia.</p>
-  return <div className="space-y-3 text-sm leading-7 text-slate-600">{paragraphs.map((line, index) => <p key={`${index}-${line.slice(0, 24)}`} className="whitespace-pre-line">{line}</p>)}</div>
+  const html = sanitizeRichHtml(value || '')
+  if (!html) return <p className="text-sm text-slate-500">Informasi program belum tersedia.</p>
+  return <div className="rich-content text-sm leading-7 text-slate-600" dangerouslySetInnerHTML={{ __html: html }}/>
 }
 
 function ProgramFiles({ files = [] }) {
@@ -42,9 +43,9 @@ export default function ProgramInnovationPage({ website, content, innovations = 
     <main className="mx-auto w-full max-w-[1240px] space-y-10 px-4 py-9 sm:space-y-12 sm:px-6 sm:py-12">
       {showProgram && <section aria-labelledby="program-title" className="space-y-5 rounded-3xl border border-slate-200/80 bg-white p-5 shadow-sm sm:p-8 lg:p-10">
         <div className="border-b border-slate-100 pb-4"><span className="text-[10px] font-extrabold uppercase tracking-[.16em] text-teal-700">Rencana Kerja Wilayah</span><h2 id="program-title" className="mt-2 text-xl font-extrabold tracking-tight text-slate-900 sm:text-2xl">{content?.title || `Program dan Kegiatan ${website.name}`}</h2></div>
-        <Paragraphs value={content?.plainBody}/>
+        <Paragraphs value={content?.body}/>
         <ProgramFiles files={files}/>
-        {!content?.plainBody && !files.length && <Link href={`/${website.subdomain}`} className="inline-flex text-xs font-bold text-teal-700 hover:underline">Kembali ke arsip modul</Link>}
+        {!content?.body?.trim() && !files.length && <Link href={`/${website.subdomain}`} className="inline-flex text-xs font-bold text-teal-700 hover:underline">Kembali ke arsip modul</Link>}
       </section>}
 
       {showInnovations && <section aria-labelledby="innovation-title" className="space-y-5">

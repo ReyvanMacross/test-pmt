@@ -4,6 +4,7 @@ import { useMemo, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { ArrowLeft, CalendarDays, Check, Download, ExternalLink, FileText, Pencil, Plus, Search, Trash2, X } from 'lucide-react'
 import { deletePublicDocumentItemAction, savePublicDocumentItemAction } from '../actions'
+import { getPublicDocumentsForAdmin } from '@/lib/public-documents'
 
 const inputClass = 'w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/15'
 const documentModules = new Set(['ppid','ppid-utama','daftar-informasi-publik','daftar-informasi-dikecualikan','informasi-wajib-berkala','informasi-tersedia-setiap-saat','informasi-serta-merta'])
@@ -16,7 +17,7 @@ function formatMonth(value) {
 
 export default function PublicDocumentManager({ website, moduleMeta, initialContent }) {
   const router = useRouter()
-  const [documents, setDocuments] = useState(Array.isArray(initialContent.metadata?.public_documents) ? initialContent.metadata.public_documents : [])
+  const [documents, setDocuments] = useState(() => Array.isArray(initialContent.documents) ? initialContent.documents : getPublicDocumentsForAdmin(initialContent))
   const [editingId, setEditingId] = useState(null)
   const [search, setSearch] = useState('')
   const [busy, startTransition] = useTransition()
@@ -35,25 +36,33 @@ export default function PublicDocumentManager({ website, moduleMeta, initialCont
     const data = new FormData(form)
     if (editingId) data.set('document_id', editingId)
     startTransition(async () => {
-      const result = await savePublicDocumentItemAction(website.id, moduleMeta.slug, data)
-      if (result.error) { notify('error', result.error); return }
-      setDocuments((current) => editingId ? current.map((item) => item.id === editingId ? result.document : item) : [result.document, ...current])
-      setEditingId(null)
-      form.reset()
-      notify('success', result.message)
-      router.refresh()
+      try {
+        const result = await savePublicDocumentItemAction(website.id, moduleMeta.slug, data)
+        if (result.error) { notify('error', result.error || 'Dokumen gagal disimpan.'); return }
+        setDocuments((current) => editingId ? current.map((item) => item.id === editingId ? result.document : item) : [result.document, ...current])
+        setEditingId(null)
+        form.reset()
+        notify('success', result.message || 'Dokumen berhasil disimpan.')
+        router.refresh()
+      } catch (error) {
+        notify('error', error.message || 'Gagal menyimpan dokumen. Periksa ukuran berkas dan coba kembali.')
+      }
     })
   }
 
   function deleteDocument(id) {
     if (!window.confirm('Hapus dokumen ini dari daftar publikasi?')) return
     startTransition(async () => {
-      const result = await deletePublicDocumentItemAction(website.id, moduleMeta.slug, id)
-      if (result.error) { notify('error', result.error); return }
-      setDocuments((current) => current.filter((item) => item.id !== id))
-      if (editingId === id) setEditingId(null)
-      notify('success', 'Dokumen berhasil dihapus.')
-      router.refresh()
+      try {
+        const result = await deletePublicDocumentItemAction(website.id, moduleMeta.slug, id)
+        if (result.error) { notify('error', result.error || 'Dokumen gagal dihapus.'); return }
+        setDocuments((current) => current.filter((item) => item.id !== id))
+        if (editingId === id) setEditingId(null)
+        notify('success', 'Dokumen berhasil dihapus.')
+        router.refresh()
+      } catch (error) {
+        notify('error', error.message || 'Gagal menghapus dokumen. Silakan coba kembali.')
+      }
     })
   }
 
@@ -82,7 +91,7 @@ export default function PublicDocumentManager({ website, moduleMeta, initialCont
       </form>
 
       <section className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
-        <div className="flex flex-col gap-4 border-b border-slate-100 p-5 sm:flex-row sm:items-center sm:justify-between sm:px-6"><div><h2 className="text-sm font-bold text-slate-900">Daftar Dokumen Dipublikasikan</h2><p className="mt-1 text-xs text-slate-500">Daftar informasi publik yang dapat diakses dan diunduh masyarakat umum.</p></div><label className="relative block w-full sm:max-w-56"><span className="sr-only">Cari dokumen</span><Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"/><input value={search} onChange={(event) => setSearch(event.target.value)} className={`${inputClass} py-2 pl-9 text-xs`} placeholder="Cari dokumen..."/></label></div>
+        <div className="flex flex-col gap-4 border-b border-slate-100 p-5 sm:flex-row sm:items-center sm:justify-between sm:px-6"><div><h2 className="flex items-center gap-2 text-sm font-bold text-slate-900">Daftar Dokumen Dipublikasikan <span className="rounded-full bg-blue-50 px-2 py-0.5 text-[10px] font-bold text-blue-700">{documents.length}</span></h2><p className="mt-1 text-xs text-slate-500">Daftar informasi publik yang dapat diakses dan diunduh masyarakat umum.</p></div><label className="relative block w-full sm:max-w-56"><span className="sr-only">Cari dokumen</span><Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"/><input value={search} onChange={(event) => setSearch(event.target.value)} className={`${inputClass} py-2 pl-9 text-xs`} placeholder="Cari dokumen..."/></label></div>
         <div className="space-y-3 p-4 sm:p-5">{filteredDocuments.length ? filteredDocuments.map((item) => <article key={item.id} className="flex flex-col gap-4 rounded-xl border border-slate-200 p-4 transition hover:border-blue-200 hover:bg-slate-50/40 md:flex-row md:items-center md:justify-between"><div className="min-w-0"><span className="inline-flex items-center gap-1.5 rounded-md bg-slate-100 px-2.5 py-1 text-[10px] font-semibold text-slate-600"><CalendarDays className="h-3.5 w-3.5"/>Diperbarui: {formatMonth(item.revision_month)}</span><h3 className="mt-2 break-words text-sm font-bold leading-snug text-slate-900">{item.title}</h3>{item.description && <p className="mt-1 line-clamp-2 text-xs leading-relaxed text-slate-500">{item.description}</p>}<a href={item.attachment?.url} target="_blank" rel="noreferrer" className="mt-2 inline-flex max-w-full items-center gap-1.5 text-xs font-semibold text-blue-700 hover:underline"><FileText className="h-3.5 w-3.5 shrink-0"/><span className="truncate">{item.attachment?.name || 'Buka berkas PDF'}</span></a></div><div className="flex shrink-0 items-center gap-2"><a href={item.attachment?.url} target="_blank" rel="noreferrer" aria-label={`Unduh ${item.title}`} className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-bold text-emerald-800 hover:bg-emerald-100"><Download className="h-3.5 w-3.5"/><span>Unduh</span></a><button type="button" onClick={() => setEditingId(item.id)} aria-label={`Edit ${item.title}`} className="rounded-lg border border-slate-200 p-2 text-slate-600 hover:bg-white hover:text-blue-700"><Pencil className="h-4 w-4"/></button><button type="button" onClick={() => deleteDocument(item.id)} disabled={busy} aria-label={`Hapus ${item.title}`} className="rounded-lg border border-rose-100 p-2 text-rose-600 hover:bg-rose-50"><Trash2 className="h-4 w-4"/></button></div></article>) : <div className="rounded-xl border border-dashed border-slate-300 px-5 py-12 text-center"><FileText className="mx-auto h-8 w-8 text-slate-300"/><p className="mt-3 text-sm font-semibold text-slate-700">{search ? 'Dokumen tidak ditemukan' : 'Belum ada dokumen'}</p><p className="mt-1 text-xs text-slate-500">{search ? 'Coba kata kunci lain.' : 'Dokumen yang ditambahkan akan muncul pada daftar dan arsip publik.'}</p></div>}</div>
       </section>
     </div>

@@ -151,7 +151,7 @@ body .fixed.top-20.right-4 > :where(div, p) p:last-child {
   background-image:
     radial-gradient(rgba(255,255,255,.2) .8px, transparent .8px),
     linear-gradient(112deg, color-mix(in srgb, var(--portal-dark, #071923) 56%, transparent) 0%, color-mix(in srgb, color-mix(in srgb, var(--portal-dark, #071923) 42%, var(--portal-accent, #0d9488) 58%) 48%, transparent) 54%, color-mix(in srgb, color-mix(in srgb, var(--portal-dark, #071923) 34%, var(--portal-accent, #0d9488) 66%) 52%, transparent) 100%),
-    var(--public-page-hero-image, url('/images/gedung-sate-hero.jpg'));
+    var(--public-page-hero-image, url('/images/pemkot_image.jpg'));
   background-size: 28px 28px, cover, cover;
   background-position: center, center, center 52%;
   background-repeat: repeat, no-repeat, no-repeat;
@@ -293,3 +293,27 @@ body .fixed.top-20.right-4 > :where(div, p) p:last-child {
   from { opacity: 0; transform: translateY(0.5rem) scale(0.985); }
   to { opacity: 1; transform: translateY(0) scale(1); }
 }
+/* Rich text saved by the admin editor, rendered consistently on public pages. */
+.rich-content > :first-child { margin-top: 0; }
+.rich-content > :last-child { margin-bottom: 0; }
+.rich-content div { min-height: 1em; }
+.rich-content p,
+.rich-content h2,
+.rich-content h3,
+.rich-content h4,
+.rich-content blockquote,
+.rich-content ul,
+.rich-content ol { margin-block: 0.75em; }
+.rich-content h2,
+.rich-content h3,
+.rich-content h4 { color: #0f172a; font-weight: 700; line-height: 1.35; }
+.rich-content h2 { font-size: 1.2em; }
+.rich-content h3 { font-size: 1.1em; }
+.rich-content ul,
+.rich-content ol { padding-left: 1.5rem; }
+.rich-content ul { list-style: disc; }
+.rich-content ol { list-style: decimal; }
+.rich-content li { padding-left: 0.2rem; }
+.rich-content li + li { margin-top: 0.25em; }
+.rich-content blockquote { border-left: 3px solid #cbd5e1; padding-left: 1rem; color: #475569; }
+.rich-content a { color: #0369a1; text-decoration: underline; text-underline-offset: 2px; }

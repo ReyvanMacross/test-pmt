@@ -10,6 +10,7 @@ import { getSession } from '@/lib/auth'
 import { CONTENT_MODULES } from '@/lib/content-modules'
 import { removePortalFile, uploadPortalFile } from '@/lib/storage'
 import { PNS_RANK_OPTIONS } from '@/lib/pns-ranks'
+import { getPublicDocumentsForAdmin } from '@/lib/public-documents'
 
 const REMOVED_MODULES = new Set(['permohonan-informasi-online', 'pengajuan-keberatan-online'])
 
@@ -380,7 +381,7 @@ export async function savePublicDocumentItemAction(websiteId, moduleSlug, formDa
     }
     const { menuItemId, row } = await getPublicDocumentContent(websiteId, moduleSlug)
     const metadata = publicDocumentMetadata(row?.metadata)
-    const documents = Array.isArray(metadata.public_documents) ? [...metadata.public_documents] : []
+    const documents = [...getPublicDocumentsForAdmin(row)]
     const previousIndex = id ? documents.findIndex((item) => item.id === id) : -1
     if (id && previousIndex < 0) return { error: 'Dokumen yang akan diedit tidak ditemukan.' }
     if (!hasUpload && previousIndex < 0) return { error: 'Unggah berkas PDF untuk dokumen baru.' }
@@ -427,7 +428,7 @@ export async function deletePublicDocumentItemAction(websiteId, moduleSlug, docu
     await authorizeWebsite(websiteId, session)
     const { menuItemId, row } = await getPublicDocumentContent(websiteId, moduleSlug)
     const metadata = publicDocumentMetadata(row?.metadata)
-    const documents = Array.isArray(metadata.public_documents) ? metadata.public_documents : []
+    const documents = getPublicDocumentsForAdmin(row)
     const document = documents.find((item) => item.id === documentId)
     if (!document) return { error: 'Dokumen tidak ditemukan.' }
     metadata.public_documents = documents.filter((item) => item.id !== documentId)

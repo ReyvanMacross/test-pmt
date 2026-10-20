@@ -675,12 +675,16 @@ export default function EditModuleContentForm({ website, moduleMeta, initialCont
                 id="editorArea"
                 contentEditable
                 onInput={handleEditorInput}
-                className="min-h-[220px] p-4 bg-white text-sm text-slate-800 focus:outline-none leading-relaxed prose prose-sm max-w-none"
+                className="min-h-[220px] p-4 bg-white text-sm text-slate-900 focus:outline-none leading-relaxed prose prose-sm max-w-none"
                 data-placeholder="Ketikkan isi konten di sini..."
               />
               <style
                 dangerouslySetInnerHTML={{
                   __html: `
+                    #editorArea,
+                    #editorArea * {
+                      color: #111827 !important;
+                    }
                     #editorArea:empty:before {
                       content: attr(data-placeholder);
                       color: #94a3b8;

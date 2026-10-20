@@ -15,6 +15,7 @@ import ProgramInnovationPage from './ProgramInnovationPage'
 import PublicGallery from './PublicGallery'
 import ServiceCatalog from './ServiceCatalog'
 import { PUBLIC_DOCUMENT_MODULES, PUBLIC_DOCUMENT_MODULE_SLUGS } from '@/lib/public-documents'
+import { sanitizeRichHtml } from '@/lib/rich-text'
 
 export const dynamic = 'force-dynamic'
 
@@ -37,27 +38,8 @@ function FileLinks({ files = [], images = [] }) {
 }
 function ContentPanel({ module, content }) {
   if (!contentIsFilled(content)) return null
-  const body = plainContent(content.body)
-  return <Panel><h2 className="text-lg font-extrabold">{content.title || module.title}</h2>{module.slug === 'profil-pimpinan' && content.metadata?.pangkat_golongan && <p className="mt-2 text-sm font-semibold text-teal-700">Pangkat / Golongan PNS: {content.metadata.pangkat_golongan}</p>}{body && <p className="mt-4 whitespace-pre-line text-sm leading-7 text-slate-600">{body}</p>}<FileLinks files={content.files} images={content.images}/></Panel>
-}
-function programPlainContent(value = '') {
-  const lists = []
-  const marked = String(value).replace(/<\/?(ol|ul|li)\b[^>]*>/gi, (tag) => {
-    const closing = /^<\//.test(tag)
-    const name = tag.match(/^<\/?(ol|ul|li)/i)?.[1]?.toLowerCase()
-    if (name === 'ol' && !closing) { lists.push({ type: 'ol', count: 0 }); return '\n' }
-    if (name === 'ul' && !closing) { lists.push({ type: 'ul', count: 0 }); return '\n' }
-    if ((name === 'ol' || name === 'ul') && closing) { lists.pop(); return '\n' }
-    if (name === 'li' && !closing) {
-      const current = lists.at(-1)
-      if (!current) return '\n• '
-      current.count += 1
-      const marker = current.type === 'ul' ? '•' : lists.length === 1 ? `${current.count}.` : `${String.fromCharCode(96 + Math.min(current.count, 26))}.`
-      return `\n${'  '.repeat(Math.max(0, lists.length - 1))}${marker} `
-    }
-    return '\n'
-  })
-  return plainContent(marked)
+  const body = sanitizeRichHtml(content.body)
+  return <Panel><h2 className="text-lg font-extrabold">{content.title || module.title}</h2>{module.slug === 'profil-pimpinan' && content.metadata?.pangkat_golongan && <p className="mt-2 text-sm font-semibold text-teal-700">Pangkat / Golongan PNS: {content.metadata.pangkat_golongan}</p>}{body && <div className="rich-content mt-4 text-sm leading-7 text-slate-600" dangerouslySetInnerHTML={{ __html: body }}/>}<FileLinks files={content.files} images={content.images}/></Panel>
 }
 function ProfileBoundaries({ profile, descriptions = {} }) {
   const entries = [['Utara', profile.batas_utara, descriptions.Utara], ['Selatan', profile.batas_selatan, descriptions.Selatan], ['Timur', profile.batas_timur, descriptions.Timur], ['Barat', profile.batas_barat, descriptions.Barat]].filter(([, value]) => value)
@@ -84,7 +66,7 @@ function ProfileRegionPage({ portal, subdomain }) {
   const missionItems = mission.split(/\n+/).map((item) => item.replace(/^\s*(?:[-*•\d.)]+\s*)/, '').trim()).filter(Boolean)
   const leaderImage = Array.isArray(leader?.images) ? leader.images[0] : null
   const leaderImageUrl = leaderImage?.url || leaderImage?.path
-  const leaderBody = plainContent(leader?.body || '')
+  const leaderBody = sanitizeRichHtml(leader?.body || '')
   const leaderQuote = plainContent(leader?.metadata?.sambutan_quote || '')
   const boundaryDescriptions = profileContent.metadata?.boundary_descriptions || {}
   const hasBoundaryData = website.template_slug === 'dinas'
@@ -95,7 +77,7 @@ function ProfileRegionPage({ portal, subdomain }) {
     <main className="mx-auto w-full max-w-[1240px] space-y-12 px-4 py-10 sm:px-6 sm:py-14 lg:space-y-16">
       {stats.length > 0 && <section aria-label="Statistik wilayah" className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-6">{stats.map(([label, value, unit, Icon]) => <article key={label} className="flex min-h-36 flex-col items-center justify-center rounded-2xl border border-slate-200 bg-white p-4 text-center shadow-sm transition hover:shadow-md sm:p-5"><span className="mb-2 flex h-11 w-11 items-center justify-center rounded-xl bg-teal-50 text-teal-700"><Icon aria-hidden="true" className="h-5 w-5"/></span><strong className="text-xl font-extrabold tracking-tight text-slate-900 sm:text-2xl">{value} <span className="text-xs font-bold text-teal-700">{unit}</span></strong><span className="mt-1 text-[10px] font-bold uppercase tracking-wider text-slate-500">{label}</span></article>)}</section>}
 
-      {portal.moduleVisibility?.['profil-pimpinan'] !== false && <section id="profil-pimpinan" className="scroll-mt-24 rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:p-8 lg:p-10"><div className="grid items-center gap-7 lg:grid-cols-12 lg:gap-10"><div className="flex flex-col items-center text-center lg:col-span-4">{leaderImageUrl && <div className="mb-4 h-48 w-48 overflow-hidden rounded-2xl border-4 border-white bg-slate-100 shadow-md sm:h-56 sm:w-56"><img src={leaderImageUrl} alt={leader.title || `Pimpinan ${website.name}`} className="h-full w-full object-cover object-top" loading="lazy"/></div>}<span className="mb-2 rounded-full border border-teal-500/20 bg-teal-50 px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-teal-700">Profil Pimpinan</span><h2 className="text-xl font-extrabold leading-snug text-slate-900">{leader.title || `Pimpinan ${website.name}`}</h2>{leader.metadata?.pangkat_golongan && <p className="mt-1 text-xs font-medium text-slate-500">{leader.metadata.pangkat_golongan}</p>}</div><div className="space-y-4 lg:col-span-8"><span className="inline-flex items-center gap-2 rounded-full border border-teal-500/20 bg-teal-50 px-3.5 py-1 text-xs font-bold uppercase tracking-widest text-teal-700"><BadgeCheck className="h-4 w-4"/>Sambutan Pimpinan</span>{leaderQuote && <blockquote className="relative rounded-2xl border border-slate-200 bg-slate-50 p-5 text-sm italic leading-7 text-slate-600"><span aria-hidden="true" className="absolute right-4 top-1 text-4xl font-black text-teal-700/15">“</span><p className="relative">{leaderQuote}</p></blockquote>}{leaderBody ? <p className="whitespace-pre-line text-sm leading-7 text-slate-600">{leaderBody}</p> : !leaderQuote && <p className="text-sm text-slate-500">Informasi pimpinan belum tersedia.</p>}<FileLinks files={leader.files}/></div></div></section>}
+      {portal.moduleVisibility?.['profil-pimpinan'] !== false && <section id="profil-pimpinan" className="scroll-mt-24 rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:p-8 lg:p-10"><div className="grid items-center gap-7 lg:grid-cols-12 lg:gap-10"><div className="flex flex-col items-center text-center lg:col-span-4">{leaderImageUrl && <div className="mb-4 h-48 w-48 overflow-hidden rounded-2xl border-4 border-white bg-slate-100 shadow-md sm:h-56 sm:w-56"><img src={leaderImageUrl} alt={leader.title || `Pimpinan ${website.name}`} className="h-full w-full object-cover object-top" loading="lazy"/></div>}<span className="mb-2 rounded-full border border-teal-500/20 bg-teal-50 px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-teal-700">Profil Pimpinan</span><h2 className="text-xl font-extrabold leading-snug text-slate-900">{leader.title || `Pimpinan ${website.name}`}</h2>{leader.metadata?.pangkat_golongan && <p className="mt-1 text-xs font-medium text-slate-500">{leader.metadata.pangkat_golongan}</p>}</div><div className="space-y-4 lg:col-span-8"><span className="inline-flex items-center gap-2 rounded-full border border-teal-500/20 bg-teal-50 px-3.5 py-1 text-xs font-bold uppercase tracking-widest text-teal-700"><BadgeCheck className="h-4 w-4"/>Sambutan Pimpinan</span>{leaderQuote && <blockquote className="relative rounded-2xl border border-slate-200 bg-slate-50 p-5 text-sm italic leading-7 text-slate-600"><span aria-hidden="true" className="absolute right-4 top-1 text-4xl font-black text-teal-700/15">“</span><p className="relative">{leaderQuote}</p></blockquote>}{leaderBody ? <div className="rich-content text-sm leading-7 text-slate-600" dangerouslySetInnerHTML={{ __html: leaderBody }}/> : !leaderQuote && <p className="text-sm text-slate-500">Informasi pimpinan belum tersedia.</p>}<FileLinks files={leader.files}/></div></div></section>}
 
       {hasBoundaryData && <section id="gambaran-wilayah" className="scroll-mt-24 space-y-5"><div className="mx-auto max-w-2xl space-y-2 text-center"><span className="inline-flex rounded-full border border-teal-500/20 bg-teal-50 px-3.5 py-1 text-xs font-bold uppercase tracking-widest text-teal-700">{website.template_slug === 'dinas' ? 'Lokasi Instansi' : 'Geografis & Letak'}</span><h2 className="text-2xl font-extrabold tracking-tight text-slate-900 sm:text-3xl">{website.template_slug === 'dinas' ? `Lokasi ${website.name}` : 'Gambaran Umum & Batas Wilayah'}</h2>{website.template_slug !== 'dinas' && <p className="text-sm leading-relaxed text-slate-600">Batas administrasi wilayah {website.name} dan keterangan singkat pada setiap sisi.</p>}</div>{website.template_slug !== 'dinas' && <ProfileBoundaries profile={profile || {}} descriptions={boundaryDescriptions}/>}{profile?.maps_embed_url && <Panel><h3 className="font-extrabold">{website.template_slug === 'dinas' ? 'Peta Lokasi Kantor' : 'Peta Wilayah'}</h3><GoogleMap url={profile.maps_embed_url} title={'Peta ' + (website.template_slug === 'dinas' ? 'lokasi ' : 'wilayah ') + website.name}/></Panel>}</section>}
 
@@ -110,7 +92,7 @@ function ProfileRegionPage({ portal, subdomain }) {
   </>
 }
 function ModuleRecords({ slug, portal }) {
-  if (slug === 'program-dan-kegiatan') return <ProgramInnovationPage website={portal.website} content={{ ...portal.contents[slug], plainBody: programPlainContent(portal.contents[slug]?.body || '') }} innovations={portal.innovations} showProgram={portal.moduleVisibility?.[slug] !== false} showInnovations={portal.moduleVisibility?.inovasi !== false}/>
+  if (slug === 'program-dan-kegiatan') return <ProgramInnovationPage website={portal.website} content={portal.contents[slug]} innovations={portal.innovations} showProgram={portal.moduleVisibility?.[slug] !== false} showInnovations={portal.moduleVisibility?.inovasi !== false}/>
   if (slug === 'inovasi') return <ProgramInnovationPage website={portal.website} innovations={portal.innovations} showProgram={false} showInnovations/>
   const documentModule = PUBLIC_DOCUMENT_MODULES.find((entry) => entry.slug === slug)
   if (documentModule) {
@@ -119,7 +101,8 @@ function ModuleRecords({ slug, portal }) {
   }
   if (slug === 'struktur-organisasi') {
     const content = portal.contents[slug]
-    return <Panel>{plainContent(content?.body || '') && <p className="mb-4 whitespace-pre-line text-sm leading-7 text-slate-600">{plainContent(content.body)}</p>}<OrganizationStructureViewer content={content || {}} headerTitle={content?.title || `Struktur Organisasi ${portal.website.name}`}/><FileLinks files={content?.files}/></Panel>
+    const body = sanitizeRichHtml(content?.body || '')
+    return <Panel>{body && <div className="rich-content mb-4 text-sm leading-7 text-slate-600" dangerouslySetInnerHTML={{ __html: body }}/>}<OrganizationStructureViewer content={content || {}} headerTitle={content?.title || `Struktur Organisasi ${portal.website.name}`}/><FileLinks files={content?.files}/></Panel>
   }
   if (slug === 'berita') return portal.news.length ? <NewsArchive portal={portal}/> : <Panel><p className="text-sm text-slate-500">Belum ada berita yang dipublikasikan.</p></Panel>
   if (slug === 'agenda-kegiatan') return <AgendaCalendar agendas={portal.agendas} websiteName={portal.website.name}/>

@@ -6,6 +6,7 @@ import { CONTENT_MODULES } from '@/lib/content-modules'
 import EditModuleContentForm from './EditModuleContentForm'
 import PublicDocumentManager from './PublicDocumentManager'
 import PageHeroImageSettings from '../PageHeroImageSettings'
+import { getPublicDocumentsForAdmin } from '@/lib/public-documents'
 
 const PUBLIC_DOCUMENT_MODULES = new Set([
   'ppid', 'ppid-utama', 'daftar-informasi-publik', 'daftar-informasi-dikecualikan',
@@ -70,7 +71,7 @@ export default async function EditModuleContentPage({ params }) {
   let initialContent = { title: '', body: '', images: [], files: [], metadata: {} }
   try {
     const contentRes = await query(
-      `SELECT c.title, c.body, c.images, c.files, c.metadata
+      `SELECT c.title, c.body, c.images, c.files, c.metadata, c.updated_at
        FROM contents c
        JOIN menu_items m ON c.menu_item_id = m.id
        WHERE c.website_id = $1 AND m.slug = $2
@@ -85,6 +86,7 @@ export default async function EditModuleContentPage({ params }) {
         images: Array.isArray(contentRes.rows[0].images) ? contentRes.rows[0].images : [],
         files: Array.isArray(contentRes.rows[0].files) ? contentRes.rows[0].files : [],
         metadata: contentRes.rows[0].metadata && typeof contentRes.rows[0].metadata === 'object' ? contentRes.rows[0].metadata : {},
+        updated_at: contentRes.rows[0].updated_at,
       }
     }
   } catch (err) {
@@ -92,6 +94,7 @@ export default async function EditModuleContentPage({ params }) {
   }
 
   if (PUBLIC_DOCUMENT_MODULES.has(moduleMeta.slug)) {
+    initialContent.documents = getPublicDocumentsForAdmin(initialContent)
     return <><PageHeroImageSettings website={website} moduleSlug={moduleMeta.slug} moduleTitle={moduleMeta.title} initialImage={initialContent.metadata?.page_hero_image}/><PublicDocumentManager website={website} moduleMeta={moduleMeta} initialContent={initialContent}/></>
   }
 

@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { ArrowRight, Bell, CalendarDays, Clock3, ContactRound, FileText, FolderTree, Image as ImageIcon, Info, Lightbulb, MapPin, ShieldCheck, UsersRound, Video, Home, ClipboardList, Landmark, BadgeCheck, TableProperties, LockKeyhole, CalendarClock, Clock4, TriangleAlert, Newspaper, Images, Network, Radio, Star, Phone } from 'lucide-react'
 import { contentIsFilled, plainContent } from '@/lib/public-kecamatan'
+import { sanitizeRichHtml } from '@/lib/rich-text'
 import { PortalFooter, PortalHeader } from './PortalChrome'
 import HeroSlider from './HeroSlider'
 
@@ -9,8 +10,8 @@ function SectionTitle({ eyebrow, title, href, linkLabel = 'Lihat selengkapnya' }
 }
 
 function EmptySafeText({ value, className = '' }) {
-  const text = plainContent(value || '')
-  return text ? <p className={`whitespace-pre-line ${className}`}>{text}</p> : null
+  const html = sanitizeRichHtml(value || '')
+  return html ? <div className={`rich-content ${className}`} dangerouslySetInnerHTML={{ __html: html }}/> : null
 }
 
 function PublicModuleCards({ portal }) {
@@ -64,8 +65,8 @@ export default function PublicKecamatanHome({ portal }) {
   const homeContent = contents.beranda
   const profileContent = contents.profil
   const introductionTitle = homeContent?.title?.trim()
-  const introductionBody = plainContent(homeContent?.body)
-  const hasIntroduction = Boolean(introductionTitle || introductionBody)
+  const introductionBody = sanitizeRichHtml(homeContent?.body || '')
+  const hasIntroduction = Boolean(introductionTitle || plainContent(homeContent?.body))
   const profileFallback = profileContent?.body && profileContent.body !== 'Konten profil wilayah' ? profileContent.body : ''
   const profileSummary = plainContent(profile?.visi || profileFallback)
   const latestNews = isModuleEnabled('berita') ? news.slice(0, 3) : []
@@ -78,7 +79,7 @@ export default function PublicKecamatanHome({ portal }) {
   return <div className="public-portal min-h-screen bg-white text-slate-900" data-portal-template={website.template_slug || 'kecamatan'}><PortalHeader website={website} profile={profile} moduleVisibility={portal.moduleVisibility} announcements={announcements}/>
     {isModuleEnabled('hero-slider') && heroSlides.length > 0 && <HeroSlider slides={heroSlides} website={website} base={base} moduleVisibility={portal.moduleVisibility} announcements={announcements}/>}
 
-    {isModuleEnabled('beranda') && hasIntroduction && <section className="border-b border-slate-100 bg-white px-5 py-10 text-center sm:py-12 lg:px-10"><div className="mx-auto max-w-3xl"><span className="inline-flex rounded-md bg-teal-50 px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-[.15em] text-teal-700">Integritas & Transparansi</span>{introductionTitle && <h2 className="mt-3 text-xl font-extrabold tracking-tight text-slate-900 sm:text-2xl">{introductionTitle}</h2>}{introductionBody && <p className="mx-auto mt-3 whitespace-pre-line text-sm leading-relaxed text-slate-600">{introductionBody}</p>}</div></section>}
+    {isModuleEnabled('beranda') && hasIntroduction && <section className="border-b border-slate-100 bg-white px-5 py-10 text-center sm:py-12 lg:px-10"><div className="mx-auto max-w-3xl"><span className="inline-flex rounded-md bg-teal-50 px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-[.15em] text-teal-700">Integritas & Transparansi</span>{introductionTitle && <h2 className="mt-3 text-xl font-extrabold tracking-tight text-slate-900 sm:text-2xl">{introductionTitle}</h2>}{introductionBody && <div className="rich-content mx-auto mt-3 text-sm leading-relaxed text-slate-600" dangerouslySetInnerHTML={{ __html: introductionBody }}/>}</div></section>}
 
     {isModuleEnabled('program-dan-kegiatan') && contentIsFilled(contents['program-dan-kegiatan']) && <section className="border-b border-slate-100 bg-white px-5 py-10 sm:py-12 lg:px-10"><div className="mx-auto max-w-3xl text-center"><span className="inline-flex rounded-md bg-teal-50 px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-[.15em] text-teal-700">Program Wilayah</span><h2 className="mt-3 text-xl font-extrabold tracking-tight text-slate-900 sm:text-2xl">{contents['program-dan-kegiatan'].title || 'Program dan Kegiatan'}</h2><EmptySafeText value={contents['program-dan-kegiatan'].body} className="mx-auto mt-3 text-sm leading-relaxed text-slate-600"/><Link href={`${base}/program-dan-kegiatan`} className="mt-5 inline-flex items-center gap-2 text-sm font-bold text-teal-700 hover:text-teal-900">Lihat program dan kegiatan<ArrowRight className="h-4 w-4"/></Link></div></section>}
 
