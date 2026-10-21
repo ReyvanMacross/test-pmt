@@ -12,7 +12,7 @@ function formatDate(value) {
 function getYoutubeId(value) {
   try {
     const url = new URL(value)
-    const host = url.hostname.toLowerCase().replace(/^www\./, '')
+    const host = url.hostname.toLowerCase().replace(/^(?:www|m)\./, '')
     const isYoutubeHost = host === 'youtube.com' || host.endsWith('.youtube.com') || host === 'youtube-nocookie.com' || host.endsWith('.youtube-nocookie.com')
     const youtubeId = host === 'youtu.be'
       ? url.pathname.split('/').filter(Boolean)[0]
@@ -31,15 +31,25 @@ function getEmbedUrl(value) {
 
   try {
     const url = new URL(value)
-    const host = url.hostname.toLowerCase().replace(/^www\./, '')
+    const host = url.hostname.toLowerCase().replace(/^(?:www|m)\./, '')
 
     if (host === 'tiktok.com' || host.endsWith('.tiktok.com')) {
       const id = url.pathname.match(/\/video\/(\d+)/)?.[1]
       if (id) return `https://www.tiktok.com/embed/v2/${id}`
     }
-    if (host === 'instagram.com' || host.endsWith('.instagram.com')) {
-      const match = url.pathname.match(/\/(?:reel|reels|p)\/([\w-]+)/)
-      if (match) return `https://www.instagram.com/p/${match[1]}/embed`
+    if (host === 'instagram.com') {
+      const match = url.pathname.match(/\/(?:reel|reels|p|tv)\/([\w-]+)/)
+      if (match) {
+        const kind = url.pathname.match(/^\/(reel|reels|p|tv)\//)?.[1]
+        const route = kind === 'p' ? 'p' : kind === 'tv' ? 'tv' : 'reel'
+        return `https://www.instagram.com/${route}/${match[1]}/embed`
+      }
+    }
+    if (host === 'facebook.com' || host.endsWith('.facebook.com') || host === 'fb.watch') {
+      const validFacebookPath = host === 'fb.watch'
+        ? /^\/[\w-]+\/?$/.test(url.pathname)
+        : /^\/(?:watch(?:\/|\?|$)|reel\/|share\/[vrs]\/|[^/]+\/videos\/)/i.test(`${url.pathname}${url.search}`)
+      if (validFacebookPath) return `https://www.facebook.com/plugins/video.php?href=${encodeURIComponent(url.toString())}&show_text=false&width=900`
     }
     if (host === 'x.com' || host === 'twitter.com' || host.endsWith('.x.com') || host.endsWith('.twitter.com')) {
       const id = url.pathname.match(/\/status\/(\d+)/)?.[1]
@@ -110,7 +120,7 @@ export default function PublicGallery({ albums, type }) {
       <div className="relative flex max-h-[calc(100dvh-1.5rem)] w-full max-w-6xl flex-col overflow-hidden rounded-2xl border border-white/10 bg-[#08151d] shadow-2xl sm:max-h-[calc(100dvh-3rem)]">
         <div className="flex min-w-0 items-center justify-between gap-3 border-b border-white/10 px-4 py-3 text-white sm:px-5"><div className="min-w-0"><p className="truncate text-sm font-bold">{selectedItem.name || (type === 'image' ? 'Dokumentasi foto' : 'Dokumentasi video')}</p><p className="mt-0.5 truncate text-[11px] text-slate-400">{selectedAlbum.title} · {selection.itemIndex + 1} dari {selectedAlbum.items.length}</p></div><button type="button" autoFocus onClick={() => setSelection(null)} aria-label="Tutup pratinjau" className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white/10 text-white transition hover:bg-white/20"><X className="h-5 w-5" /></button></div>
         <div className="relative grid min-h-0 flex-1 place-items-center overflow-auto p-2 sm:p-4">
-          {type === 'image' ? <img src={selectedItem.path} alt={selectedItem.name || ''} className="max-h-[calc(100dvh-9rem)] max-w-full object-contain sm:max-h-[calc(100dvh-11rem)]" /> : isExternalVideo(selectedItem) ? embedUrl ? <iframe key={embedUrl} src={embedUrl} title={selectedItem.name || 'Video galeri'} allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowFullScreen className="aspect-video max-h-[calc(100dvh-10rem)] w-full max-w-5xl rounded-lg bg-black" /> : <div className="flex min-h-64 w-full flex-col items-center justify-center gap-4 rounded-xl bg-slate-900 p-6 text-center text-white"><Play className="h-10 w-10 text-teal-300" /><p className="text-sm">Pratinjau tidak tersedia untuk tautan ini.</p><a href={selectedItem.path} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 rounded-lg bg-white px-4 py-2 text-xs font-bold text-slate-900"><ExternalLink className="h-4 w-4" />Buka video di situs asal</a></div> : <video key={selectedItem.path} src={selectedItem.path} controls autoPlay playsInline className="max-h-[calc(100dvh-9rem)] w-full max-w-5xl bg-black object-contain sm:max-h-[calc(100dvh-11rem)]" />}
+          {type === 'image' ? <img src={selectedItem.path} alt={selectedItem.name || ''} className="max-h-[calc(100dvh-9rem)] max-w-full object-contain sm:max-h-[calc(100dvh-11rem)]" /> : isExternalVideo(selectedItem) ? embedUrl ? <div className="flex w-full max-w-5xl flex-col items-center gap-3"><iframe key={embedUrl} src={embedUrl} title={selectedItem.name || 'Video galeri'} allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerPolicy="strict-origin-when-cross-origin" allowFullScreen className="aspect-video max-h-[calc(100dvh-11rem)] w-full rounded-lg bg-black" /><a href={selectedItem.path} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 rounded-lg bg-white px-4 py-2 text-xs font-bold text-slate-900"><ExternalLink className="h-4 w-4" />Buka di platform asal</a></div> : <div className="flex min-h-64 w-full flex-col items-center justify-center gap-4 rounded-xl bg-slate-900 p-6 text-center text-white"><Play className="h-10 w-10 text-teal-300" /><p className="text-sm">Pratinjau tidak tersedia untuk tautan ini.</p><a href={selectedItem.path} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 rounded-lg bg-white px-4 py-2 text-xs font-bold text-slate-900"><ExternalLink className="h-4 w-4" />Buka video di situs asal</a></div> : <video key={selectedItem.path} src={selectedItem.path} controls autoPlay playsInline className="max-h-[calc(100dvh-9rem)] w-full max-w-5xl bg-black object-contain sm:max-h-[calc(100dvh-11rem)]" />}
           {selection.itemIndex > 0 && <button type="button" onClick={() => moveItem(-1)} aria-label="Media sebelumnya" className="absolute left-2 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-black/60 text-white hover:bg-black/80 sm:left-4"><ChevronLeft className="h-6 w-6" /></button>}
           {selection.itemIndex < selectedAlbum.items.length - 1 && <button type="button" onClick={() => moveItem(1)} aria-label="Media berikutnya" className="absolute right-2 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-black/60 text-white hover:bg-black/80 sm:right-4"><ChevronRight className="h-6 w-6" /></button>}
         </div>

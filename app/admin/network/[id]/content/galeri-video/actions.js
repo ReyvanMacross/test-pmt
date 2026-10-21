@@ -1,12 +1,43 @@
 'use server'
 
+import { randomUUID } from 'node:crypto'
 
 import { canManageWebsite } from '@/lib/website-access'
 import { revalidatePath } from 'next/cache'
 import { getSession } from '@/lib/auth'
 import { getCurrentAdminAccess, hasAdminPermission } from '@/lib/admin-access'
 import pool, { query } from '@/lib/db'
-import { removePortalFile } from '@/lib/storage'
+import { createPortalSignedUploadUrl, getPortalPublicUrl, getPortalStorageBucket, getPortalStorageObject, removePortalFile } from '@/lib/storage'
+
+const MAX_VIDEO_SIZE = 100 * 1024 * 1024
+const VIDEO_TYPES = new Map([['video/mp4', '.mp4'], ['video/webm', '.webm']])
+
+function parseVideoLink(rawUrl) {
+  let parsed
+  try { parsed = new URL(rawUrl) } catch { return { error: 'Masukkan tautan video yang valid.' } }
+  if (parsed.protocol !== 'https:' || parsed.username || parsed.password) return { error: 'Tautan video harus menggunakan HTTPS yang aman.' }
+  const host = parsed.hostname.toLowerCase().replace(/^www\./, '')
+  if (['youtube.com', 'youtu.be', 'youtube-nocookie.com'].includes(host) || host.endsWith('.youtube.com')) {
+    const id = host === 'youtu.be' ? parsed.pathname.split('/').filter(Boolean)[0] : parsed.searchParams.get('v') || parsed.pathname.match(/^\/(?:shorts|embed|live)\/([^/?]+)/)?.[1]
+    return id && /^[\w-]{6,20}$/.test(id) ? { parsed, type: 'youtube' } : { error: 'Tautan YouTube tidak memuat ID video yang valid.' }
+  }
+  if (host === 'instagram.com' || host.endsWith('.instagram.com')) {
+    return /^\/(?:reel|reels|p|tv)\/[\w-]+\/?$/.test(parsed.pathname) ? { parsed, type: 'instagram' } : { error: 'Gunakan tautan Instagram Reel atau postingan video.' }
+  }
+  if (host === 'facebook.com' || host.endsWith('.facebook.com') || host === 'fb.watch') {
+    const validPath = host === 'fb.watch'
+      ? /^\/[\w-]+\/?$/.test(parsed.pathname)
+      : /^\/(?:watch(?:\/|\?|$)|reel\/|share\/[vrs]\/|[^/]+\/videos\/)/i.test(`${parsed.pathname}${parsed.search}`)
+    return validPath ? { parsed, type: 'facebook' } : { error: 'Gunakan tautan Facebook Watch, Reel, atau video.' }
+  }
+  return { error: 'Tautan video mendukung YouTube, Instagram Reels, dan Facebook video.' }
+}
+
+function videoMetadataError(title, description) {
+  if (!title || title.length > 255) return 'Judul video wajib diisi, maksimal 255 karakter.'
+  if (description && description.length > 5000) return 'Deskripsi video maksimal 5.000 karakter.'
+  return null
+}
 
 async function authorize(websiteId) {
   const session = await getSession()
@@ -77,27 +108,18 @@ export async function addVideoUrlAction(websiteId, albumId, formData) {
     const rawUrl = formData.get('url')?.trim()
     const title = formData.get('title')?.trim()
     const description = formData.get('description')?.trim() || null
-    if (!title || title.length > 255) return { error: 'Judul video wajib diisi, maksimal 255 karakter.' }
-    if (description && description.length > 5000) return { error: 'Deskripsi video maksimal 5.000 karakter.' }
-    let parsed
-    try { parsed = new URL(rawUrl) } catch { return { error: 'Masukkan URL video yang valid.' } }
-    if (parsed.protocol !== 'https:') return { error: 'Tautan YouTube harus menggunakan HTTPS.' }
-    const hostname = parsed.hostname.toLowerCase().replace(/^www\./, '')
-    const isYoutube = ['youtube.com', 'youtu.be', 'youtube-nocookie.com'].includes(hostname)
-    if (!isYoutube) return { error: 'Tautan video hanya mendukung YouTube.' }
-    const videoId = hostname === 'youtu.be'
-      ? parsed.pathname.split('/').filter(Boolean)[0]
-      : parsed.searchParams.get('v') || parsed.pathname.match(/^\/(?:shorts|embed|live)\/([^/?]+)/)?.[1]
-    if (!videoId || !/^[\w-]{6,20}$/.test(videoId)) return { error: 'Tautan YouTube tidak memuat ID video yang valid.' }
+    const metadataError = videoMetadataError(title, description)
+    if (metadataError) return { error: metadataError }
+    const videoLink = parseVideoLink(rawUrl)
+    if (videoLink.error) return { error: videoLink.error }
     const albumResult = await query("SELECT id, title FROM gallery_albums WHERE id = $1 AND website_id = $2 AND type = 'video' LIMIT 1", [albumId, website.id])
     const album = albumResult.rows[0]
     if (!album) return { error: 'Album video tidak ditemukan.' }
-    const type = 'youtube'
     const client = await pool.connect()
     let item
     try {
       await client.query('BEGIN')
-      const result = await client.query('INSERT INTO gallery_items (gallery_album_id, type, path, name, description, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, NOW(), NOW()) RETURNING id, gallery_album_id, type, path, name, description, created_at', [album.id, type, parsed.toString(), title, description])
+      const result = await client.query("INSERT INTO gallery_items (gallery_album_id, type, path, name, description, created_at, updated_at) VALUES ($1, 'video', $2, $3, $4, NOW(), NOW()) RETURNING id, gallery_album_id, type, path, name, description, created_at", [album.id, videoLink.parsed.toString(), title, description])
       item = result.rows[0]
       await activity(client, session.id, website.id, 'add_video_url', `${website.name}: menambahkan tautan video "${title}" ke album "${album.title}".`)
       await client.query('COMMIT')
@@ -105,6 +127,79 @@ export async function addVideoUrlAction(websiteId, albumId, formData) {
     refresh(website.id, album.id)
     return { success: true, message: 'Tautan video berhasil ditambahkan.', item }
   } catch (error) { console.error('Add video URL error:', error); return { error: error.message || 'Gagal menambahkan tautan video.' } }
+}
+
+export async function createVideoUploadUrlAction(websiteId, albumId, formData) {
+  try {
+    const { website } = await authorize(websiteId)
+    const title = String(formData.get('title') || '').trim()
+    const description = String(formData.get('description') || '').trim() || null
+    const contentType = String(formData.get('content_type') || '')
+    const originalName = String(formData.get('file_name') || '').slice(0, 255)
+    const size = Number(formData.get('file_size'))
+    const error = videoMetadataError(title, description)
+    if (error) return { error }
+    if (!VIDEO_TYPES.has(contentType)) return { error: 'Format video harus MP4 atau WebM.' }
+    if (!Number.isFinite(size) || size <= 0 || size > MAX_VIDEO_SIZE) return { error: 'Ukuran video maksimal 100 MB.' }
+    const albumResult = await query("SELECT id FROM gallery_albums WHERE id = $1 AND website_id = $2 AND type = 'video' LIMIT 1", [albumId, website.id])
+    if (!albumResult.rows[0]) return { error: 'Album video tidak ditemukan.' }
+    const objectPath = `websites/${website.id}/gallery/videos/${album.id}/${randomUUID()}${VIDEO_TYPES.get(contentType)}`
+    const signed = await createPortalSignedUploadUrl(objectPath)
+    return { success: true, upload: { ...signed, contentType, size, title, description, originalName } }
+  } catch (error) {
+    console.error('Create video upload URL error:', error)
+    return { error: error.message || 'Gagal menyiapkan unggahan video.' }
+  }
+}
+
+export async function registerUploadedVideoAction(websiteId, albumId, payload) {
+  try {
+    const { session, website } = await authorize(websiteId)
+    const objectPath = String(payload?.path || '')
+    const title = String(payload?.title || '').trim()
+    const description = String(payload?.description || '').trim() || null
+    const contentType = String(payload?.contentType || '')
+    const size = Number(payload?.size)
+    const error = videoMetadataError(title, description)
+    if (error) return { error }
+    if (!VIDEO_TYPES.has(contentType) || !Number.isFinite(size) || size <= 0 || size > MAX_VIDEO_SIZE) return { error: 'Data berkas video tidak valid.' }
+    const prefix = `websites/${website.id}/gallery/videos/${albumId}/`
+    const filename = objectPath.startsWith(prefix) ? objectPath.slice(prefix.length) : ''
+    if (!/^[\da-f-]{36}\.(?:mp4|webm)$/i.test(filename)) return { error: 'Lokasi video tidak valid.' }
+    const albumResult = await query("SELECT id, title FROM gallery_albums WHERE id = $1 AND website_id = $2 AND type = 'video' LIMIT 1", [albumId, website.id])
+    const album = albumResult.rows[0]
+    if (!album) return { error: 'Album video tidak ditemukan.' }
+    const stored = await getPortalStorageObject(getPortalStorageBucket(), objectPath)
+    if (!stored || Number(stored.metadata?.size) !== size || (stored.metadata?.mimetype && stored.metadata.mimetype !== contentType)) return { error: 'Berkas belum selesai diunggah atau metadata video tidak sesuai.' }
+    const publicUrl = getPortalPublicUrl(objectPath)
+    const client = await pool.connect()
+    let item
+    try {
+      await client.query('BEGIN')
+      const inserted = await client.query("INSERT INTO gallery_items (gallery_album_id, type, path, name, description, created_at, updated_at) VALUES ($1, 'video', $2, $3, $4, NOW(), NOW()) RETURNING id, gallery_album_id, type, path, name, description, created_at", [album.id, publicUrl, title, description])
+      item = inserted.rows[0]
+      await activity(client, session.id, website.id, 'upload_gallery_video', `${website.name}: mengunggah video \"${title}\" ke album \"${album.title}\".`)
+      await client.query('COMMIT')
+    } catch (error) { await client.query('ROLLBACK'); throw error } finally { client.release() }
+    refresh(website.id, album.id)
+    return { success: true, message: 'Video berhasil diunggah.', item }
+  } catch (error) {
+    console.error('Register uploaded video error:', error)
+    return { error: error.message || 'Gagal menyimpan video ke album.' }
+  }
+}
+
+export async function discardVideoUploadAction(websiteId, albumId, objectPath) {
+  try {
+    const { website } = await authorize(websiteId)
+    const prefix = `websites/${website.id}/gallery/videos/${albumId}/`
+    if (typeof objectPath !== 'string' || !objectPath.startsWith(prefix)) return { error: 'Lokasi video tidak valid.' }
+    await removePortalFile(`${getPortalStorageBucket()}/${objectPath}`)
+    return { success: true }
+  } catch (error) {
+    console.error('Discard video upload error:', error)
+    return { error: error.message || 'Gagal membersihkan unggahan sementara.' }
+  }
 }
 
 export async function deleteVideoItemAction(websiteId, albumId, itemId) {

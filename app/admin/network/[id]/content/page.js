@@ -45,7 +45,7 @@ export default async function ContentManagementPage({ params }) {
       [id]
     )
     visibilityResult.rows.forEach((row) => {
-      if (Object.hasOwn(moduleVisibility, row.module_slug)) moduleVisibility[row.module_slug] = row.is_enabled !== false
+      if (Object.hasOwn(moduleVisibility, row.module_slug) && row.module_slug !== 'hero-halaman') moduleVisibility[row.module_slug] = row.is_enabled !== false
     })
   } catch (error) {
     moduleVisibilityReady = false
@@ -58,7 +58,7 @@ export default async function ContentManagementPage({ params }) {
 
   try {
     const resContents = await query(
-      `SELECT c.id, c.title, c.body, c.images, c.files, m.slug AS module_slug
+      `SELECT c.id, c.title, c.body, c.images, c.files, c.metadata, m.slug AS module_slug
        FROM contents c
        JOIN menu_items m ON c.menu_item_id = m.id
        WHERE c.website_id = $1`,
@@ -68,12 +68,14 @@ export default async function ContentManagementPage({ params }) {
     resContents.rows.forEach((row) => {
       const hasImages = Array.isArray(row.images) && row.images.length > 0
       const hasFiles = Array.isArray(row.files) && row.files.length > 0
-      const isFilled = Boolean(row.title?.trim() || row.body?.trim() || hasImages || hasFiles)
+      const hasPageHero = Boolean(row.metadata?.page_hero_image?.url || row.metadata?.page_hero_image?.path)
+      const isFilled = Boolean(row.title?.trim() || row.body?.trim() || hasImages || hasFiles || hasPageHero)
       existingContentsMap[row.module_slug] = {
         title: row.title,
         body: row.body,
         has_images: hasImages,
         has_files: hasFiles,
+        has_page_hero: hasPageHero,
         has_content: isFilled,
       }
     })

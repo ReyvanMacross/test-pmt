@@ -4,7 +4,6 @@ import { getSession } from '@/lib/auth'
 import { getCurrentAdminAccess, hasAdminPermission } from '@/lib/admin-access'
 import { query } from '@/lib/db'
 import ServicesManagerClient from './ServicesManagerClient'
-import PageHeroImageSettings from '../PageHeroImageSettings'
 
 export async function generateMetadata({ params }) {
   const { id } = await params
@@ -27,6 +26,5 @@ export default async function ServicesPage({ params }) {
      FROM services WHERE website_id = $1 ORDER BY updated_at DESC NULLS LAST, created_at DESC NULLS LAST, id DESC`, [website.id]
   )
   const version = JSON.stringify(result.rows.map((service) => [service.id, service.updated_at]))
-  const heroResult = await query('SELECT c.metadata FROM contents c JOIN menu_items m ON m.id = c.menu_item_id WHERE c.website_id = $1 AND m.slug = $2 LIMIT 1', [website.id, 'layanan'])
-  return <><PageHeroImageSettings website={website} moduleSlug="layanan" moduleTitle="Layanan Publik" initialImage={heroResult.rows[0]?.metadata?.page_hero_image}/><ServicesManagerClient key={version} website={website} initialServices={result.rows}/></>
+  return <ServicesManagerClient key={version} website={website} initialServices={result.rows}/>
 }

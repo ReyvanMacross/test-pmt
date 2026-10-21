@@ -33,8 +33,6 @@ export default function EditProfileForm({ website, initialProfile = {}, initialK
   const [missionItems, setMissionItems] = useState(() => parseList(initialProfile.misi).length ? parseList(initialProfile.misi) : [''])
   const [kelurahanList, setKelurahanList] = useState(() => initialKelurahanList.length ? initialKelurahanList : [{ nama: '', deskripsi: '' }])
   const [boundaryDescriptions, setBoundaryDescriptions] = useState(() => initialBoundaryDescriptions || {})
-  const [pageHeroFile, setPageHeroFile] = useState(null)
-  const [removePageHero, setRemovePageHero] = useState(false)
 
   const [saving, setSaving] = useState(false)
   const [toast, setToast] = useState(null) // { type: 'success' | 'error', message: string }
@@ -146,8 +144,6 @@ export default function EditProfileForm({ website, initialProfile = {}, initialK
 
     try {
       const fd = new FormData(formRef.current)
-      if (pageHeroFile) fd.set('page_hero_file', pageHeroFile)
-      if (removePageHero) fd.set('remove_page_hero', 'true')
       const res = await saveProfileContentAction(website.id, fd)
 
       if (res?.error) {
@@ -269,7 +265,6 @@ export default function EditProfileForm({ website, initialProfile = {}, initialK
         onSubmit={handleSubmit}
         className="border border-slate-200 rounded-2xl shadow-sm bg-white p-6 sm:p-8 space-y-8"
       >
-        <section className="rounded-xl border border-slate-200 bg-slate-50 p-4 sm:p-5"><h2 className="text-base font-semibold text-slate-900">Gambar Header Halaman Profil</h2><p className="mt-1 text-xs text-slate-500">Gambar ini hanya dipakai pada halaman Profil. Beranda tetap menggunakan Hero Slider.</p>{!removePageHero && !pageHeroFile && initialProfile.page_hero_image?.url && <img src={initialProfile.page_hero_image.url} alt="Gambar header profil saat ini" className="mt-3 h-32 w-full max-w-xl rounded-lg object-cover"/>}<input type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => { setPageHeroFile(event.target.files?.[0] || null); setRemovePageHero(false) }} className="mt-3 block w-full max-w-xl text-sm text-slate-600 file:mr-3 file:rounded-lg file:border-0 file:bg-white file:px-3 file:py-2 file:text-xs file:font-semibold file:text-slate-700"/><p className="mt-1 text-[11px] text-slate-500">JPG, PNG, WebP · maksimal 5 MB</p>{initialProfile.page_hero_image?.url && <button type="button" onClick={() => { setPageHeroFile(null); setRemovePageHero(true) }} className="mt-2 text-xs font-semibold text-rose-600">Hapus gambar header khusus</button>}</section>
         {/* ── SECTION 1: Statistik & Demografi Wilayah ─────────────────────── */}
         <section className="space-y-4 pt-2">
           <div className="border-b border-slate-100 pb-3">

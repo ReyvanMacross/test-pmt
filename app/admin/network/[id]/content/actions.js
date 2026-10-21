@@ -34,6 +34,7 @@ export async function setWebsiteModuleVisibilityAction(websiteId, moduleSlug, is
     if (!CONTENT_MODULES.some((module) => module.slug === moduleSlug)) {
       return { error: 'Modul yang dipilih tidak dikenali.' }
     }
+    if (moduleSlug === 'hero-halaman') return { error: 'Modul Hero Halaman selalu aktif di pengelolaan admin.' }
     await authorizeWebsite(websiteId, session)
 
     await query(
@@ -78,7 +79,6 @@ async function getOrCreateMenuItemId(slug) {
 // ─── 1. SIMPAN KONTEN MODUL ───────────────────────────────────────────────────
 export async function saveModuleContentAction(websiteId, moduleSlug, formData) {
   let uploadedFile = null
-  let uploadedHeroFile = null
   try {
     if (REMOVED_MODULES.has(moduleSlug)) return { error: 'Modul ini sudah tidak digunakan.' }
     const session = await getSession()
@@ -132,19 +132,6 @@ export async function saveModuleContentAction(websiteId, moduleSlug, formData) {
     const metadata = currentContent?.metadata && typeof currentContent.metadata === 'object' && !Array.isArray(currentContent.metadata)
       ? { ...currentContent.metadata }
       : {}
-    const pageHeroFile = formData.get('page_hero_file')
-    const removePageHero = formData.get('remove_page_hero') === 'true'
-    const hasPageHeroUpload = pageHeroFile && typeof pageHeroFile === 'object' && typeof pageHeroFile.size === 'number' && pageHeroFile.size > 0
-    const oldPageHero = metadata.page_hero_image
-    if (hasPageHeroUpload) {
-      if (!['image/jpeg', 'image/png', 'image/webp'].includes(pageHeroFile.type)) return { error: 'Gambar header harus JPG, PNG, atau WebP.' }
-      if (pageHeroFile.size > 5 * 1024 * 1024) return { error: 'Gambar header maksimal 5 MB.' }
-      const ext = path.extname(pageHeroFile.name || '').toLowerCase() || ({ 'image/jpeg': '.jpg', 'image/png': '.png', 'image/webp': '.webp' }[pageHeroFile.type])
-      uploadedHeroFile = await uploadPortalFile({ file: pageHeroFile, objectPath: `websites/${websiteId}/page-heroes/${moduleSlug}/${randomUUID()}${ext}` })
-      metadata.page_hero_image = { url: uploadedHeroFile.publicUrl, path: uploadedHeroFile.path, name: pageHeroFile.name, type: pageHeroFile.type }
-    } else if (removePageHero) {
-      delete metadata.page_hero_image
-    }
     if (moduleSlug === 'profil-pimpinan') {
       metadata.pangkat_golongan = pangkatGolongan || null
       metadata.sambutan_quote = sambutanQuote || null
@@ -231,10 +218,6 @@ export async function saveModuleContentAction(websiteId, moduleSlug, formData) {
         console.warn('Could not remove replaced Supabase content file:', error.message)
       })))
     }
-    if ((hasPageHeroUpload || removePageHero) && oldPageHero?.path) {
-      await removePortalFile(oldPageHero.url || oldPageHero.path).catch((error) => console.warn('Could not remove previous page hero image:', error.message))
-    }
-
     // Dapatkan nama website untuk logging
     const wsRes = await query('SELECT name FROM websites WHERE id = $1 LIMIT 1', [websiteId])
     const websiteName = wsRes.rows[0]?.name || 'Website'
@@ -263,7 +246,6 @@ export async function saveModuleContentAction(websiteId, moduleSlug, formData) {
     return { success: true, message: `Konten ${moduleTitle} berhasil disimpan.` }
   } catch (err) {
     if (uploadedFile?.path) await removePortalFile(`${uploadedFile.bucket}/${uploadedFile.path}`).catch(() => {})
-    if (uploadedHeroFile?.path) await removePortalFile(`${uploadedHeroFile.bucket}/${uploadedHeroFile.path}`).catch(() => {})
     console.error('Error saving module content:', err)
     return { error: err.message || 'Gagal menyimpan konten. Silakan coba lagi.' }
   }
@@ -275,7 +257,7 @@ export async function saveModuleHeroImageAction(websiteId, moduleSlug, formData)
     const session = await getSession()
     if (!session) return { error: 'Sesi berakhir. Silakan masuk kembali.' }
     await authorizeWebsite(websiteId, session)
-    if (!CONTENT_MODULES.some((module) => module.slug === moduleSlug) || ['beranda', 'hero-slider'].includes(moduleSlug)) return { error: 'Gambar header tidak dapat diatur untuk halaman ini.' }
+    if (!CONTENT_MODULES.some((module) => module.slug === moduleSlug) || ['beranda', 'hero-slider', 'hero-halaman', 'profil-pimpinan', 'struktur-organisasi'].includes(moduleSlug)) return { error: 'Gambar header tidak dapat diatur untuk halaman ini.' }
     const file = formData.get('page_hero_file')
     const removeImage = formData.get('remove_page_hero') === 'true'
     const hasUpload = file && typeof file === 'object' && typeof file.size === 'number' && file.size > 0

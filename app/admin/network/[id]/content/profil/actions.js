@@ -4,9 +4,6 @@ import { revalidatePath } from 'next/cache'
 import { query } from '@/lib/db'
 import { getSession } from '@/lib/auth'
 import { canManageWebsite } from '@/lib/website-access'
-import { randomUUID } from 'node:crypto'
-import path from 'node:path'
-import { removePortalFile, uploadPortalFile } from '@/lib/storage'
 
 // ─── Helper Otorisasi Website ─────────────────────────────────────────────────
 async function authorizeWebsite(websiteId, session) {
@@ -38,15 +35,8 @@ async function getOrCreateProfileMenuItemId() {
 export async function saveProfileContentAction(websiteId, formData) {
   const session = await getSession()
   if (!session) return { error: 'Sesi berakhir. Silakan masuk kembali.' }
-  let uploadedHero = null
-
   try {
     const website = await authorizeWebsite(websiteId, session)
-    const incomingHero = formData.get('page_hero_file')
-    if (incomingHero && typeof incomingHero === 'object' && incomingHero.size > 0) {
-      if (!['image/jpeg', 'image/png', 'image/webp'].includes(incomingHero.type)) return { error: 'Gambar header harus JPG, PNG, atau WebP.' }
-      if (incomingHero.size > 5 * 1024 * 1024) return { error: 'Gambar header maksimal 5 MB.' }
-    }
 
     // Ambil semua field dari formData
     const luas_wilayah = formData.get('statLuas')?.trim() || null
@@ -154,17 +144,6 @@ export async function saveProfileContentAction(websiteId, formData) {
     const metadata = currentContent.rows[0]?.metadata && typeof currentContent.rows[0].metadata === 'object' && !Array.isArray(currentContent.rows[0].metadata)
       ? { ...currentContent.rows[0].metadata }
       : {}
-    const oldHero = metadata.page_hero_image
-    const heroFile = formData.get('page_hero_file')
-    const hasHeroUpload = heroFile && typeof heroFile === 'object' && heroFile.size > 0
-    const removeHero = formData.get('remove_page_hero') === 'true'
-    if (hasHeroUpload) {
-      if (!['image/jpeg', 'image/png', 'image/webp'].includes(heroFile.type)) return { error: 'Gambar header harus JPG, PNG, atau WebP.' }
-      if (heroFile.size > 5 * 1024 * 1024) return { error: 'Gambar header maksimal 5 MB.' }
-      const ext = { 'image/jpeg': '.jpg', 'image/png': '.png', 'image/webp': '.webp' }[heroFile.type]
-      uploadedHero = await uploadPortalFile({ file: heroFile, objectPath: `websites/${websiteId}/page-heroes/profil/${randomUUID()}${ext}` })
-      metadata.page_hero_image = { url: uploadedHero.publicUrl, path: uploadedHero.path, name: heroFile.name, type: heroFile.type }
-    } else if (removeHero) delete metadata.page_hero_image
     metadata.kelurahan_list = kelurahanList
     metadata.boundary_descriptions = boundaryDescriptions
     const profileHasData = Boolean(visi || misi || luas_wilayah || jumlah_rw || jumlah_rt || total_jiwa || jumlah_kk || kepuasan_warga || batas_utara || batas_selatan || batas_timur || batas_barat || maps_embed_url || kelurahanList.length || Object.values(boundaryDescriptions).some(Boolean))
@@ -183,7 +162,6 @@ export async function saveProfileContentAction(websiteId, formData) {
          updated_at = NOW()`,
       [websiteId, menuItemId, contentTitle, contentBody, JSON.stringify(metadata)]
     )
-    if ((hasHeroUpload || removeHero) && oldHero?.path) await removePortalFile(oldHero.url || oldHero.path).catch(() => {})
 
     // 3. Catat ke activity_logs
     const wsRes = await query('SELECT name, subdomain FROM websites WHERE id = $1 LIMIT 1', [websiteId])
@@ -210,7 +188,6 @@ export async function saveProfileContentAction(websiteId, formData) {
 
     return { success: true, message: 'Perubahan profil berhasil disimpan.' }
   } catch (err) {
-    if (uploadedHero?.path) await removePortalFile(`${uploadedHero.bucket}/${uploadedHero.path}`).catch(() => {})
     console.error('Error saving profile content:', err)
     return { error: err.message || 'Gagal menyimpan profil. Silakan coba lagi.' }
   }

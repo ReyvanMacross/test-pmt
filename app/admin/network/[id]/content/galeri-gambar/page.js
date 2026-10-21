@@ -4,8 +4,6 @@ import { getSession } from '@/lib/auth'
 import { getCurrentAdminAccess, hasAdminPermission } from '@/lib/admin-access'
 import { query } from '@/lib/db'
 import GalleryAlbumsClient from './GalleryAlbumsClient'
-import PageHeroImageSettings from '../PageHeroImageSettings'
-import { getPageHeroImage } from '@/lib/page-hero'
 
 export async function generateMetadata({ params }) {
   const { id } = await params
@@ -43,5 +41,5 @@ export default async function GalleryAlbumsPage({ params }) {
     [id]
   )
 
-  return <><PageHeroImageSettings website={website} moduleSlug="galeri-gambar" moduleTitle="Galeri Foto" initialImage={await getPageHeroImage(website.id, 'galeri-gambar')}/><GalleryAlbumsClient website={website} initialAlbums={albumResult.rows} /></>
+  return <GalleryAlbumsClient website={website} initialAlbums={albumResult.rows} />
 }

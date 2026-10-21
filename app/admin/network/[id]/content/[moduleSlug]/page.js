@@ -5,7 +5,6 @@ import { query } from '@/lib/db'
 import { CONTENT_MODULES } from '@/lib/content-modules'
 import EditModuleContentForm from './EditModuleContentForm'
 import PublicDocumentManager from './PublicDocumentManager'
-import PageHeroImageSettings from '../PageHeroImageSettings'
 import { getPublicDocumentsForAdmin } from '@/lib/public-documents'
 
 const PUBLIC_DOCUMENT_MODULES = new Set([
@@ -95,7 +94,7 @@ export default async function EditModuleContentPage({ params }) {
 
   if (PUBLIC_DOCUMENT_MODULES.has(moduleMeta.slug)) {
     initialContent.documents = getPublicDocumentsForAdmin(initialContent)
-    return <><PageHeroImageSettings website={website} moduleSlug={moduleMeta.slug} moduleTitle={moduleMeta.title} initialImage={initialContent.metadata?.page_hero_image}/><PublicDocumentManager website={website} moduleMeta={moduleMeta} initialContent={initialContent}/></>
+    return <PublicDocumentManager website={website} moduleMeta={moduleMeta} initialContent={initialContent}/>
   }
 
   return (

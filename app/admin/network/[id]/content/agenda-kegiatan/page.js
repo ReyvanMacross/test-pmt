@@ -5,8 +5,6 @@ import { getSession } from '@/lib/auth'
 import { getCurrentAdminAccess, hasAdminPermission } from '@/lib/admin-access'
 import { query } from '@/lib/db'
 import AgendaManagerClient from './AgendaManagerClient'
-import PageHeroImageSettings from '../PageHeroImageSettings'
-import { getPageHeroImage } from '@/lib/page-hero'
 
 export async function generateMetadata({ params }) {
   const { id } = await params
@@ -29,5 +27,5 @@ export default async function AgendaManagementPage({ params }) {
      FROM agendas WHERE website_id = $1 ORDER BY start_date ASC, created_at DESC`, [website.id]
   )
   const version = JSON.stringify(result.rows.map((agenda) => [agenda.id, agenda.updated_at]))
-  return <><PageHeroImageSettings website={website} moduleSlug="agenda-kegiatan" moduleTitle="Agenda Kegiatan" initialImage={await getPageHeroImage(website.id, 'agenda-kegiatan')}/><AgendaManagerClient key={version} website={website} initialAgendas={result.rows}/></>
+  return <AgendaManagerClient key={version} website={website} initialAgendas={result.rows}/>
 }

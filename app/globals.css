@@ -133,11 +133,11 @@ body .fixed.top-20.right-4 > :where(div, p) p:last-child {
 }
 
 .public-home-hero__base {
-  background: linear-gradient(125deg, var(--portal-dark, #071923), color-mix(in srgb, var(--portal-accent, #0d9488) 38%, var(--portal-dark, #071923)) 58%, var(--portal-dark, #071923));
+  background: var(--portal-hero-gradient, linear-gradient(160deg, rgba(4, 18, 16, .95) 0%, rgba(6, 20, 29, .92) 50%, rgba(11, 25, 44, .96) 100%));
 }
 
 .public-home-hero__overlay {
-  background: linear-gradient(110deg, color-mix(in srgb, var(--portal-dark, #071923) 50%, transparent), color-mix(in srgb, var(--portal-accent, #0d9488) 34%, transparent) 58%, color-mix(in srgb, var(--portal-dark, #071923) 44%, transparent));
+  background: var(--portal-hero-gradient, linear-gradient(160deg, rgba(4, 18, 16, .95) 0%, rgba(6, 20, 29, .92) 50%, rgba(11, 25, 44, .96) 100%));
 }
 
 .public-home-hero__dots {
@@ -150,7 +150,7 @@ body .fixed.top-20.right-4 > :where(div, p) p:last-child {
   background-color: #073b37;
   background-image:
     radial-gradient(rgba(255,255,255,.2) .8px, transparent .8px),
-    linear-gradient(112deg, color-mix(in srgb, var(--portal-dark, #071923) 56%, transparent) 0%, color-mix(in srgb, color-mix(in srgb, var(--portal-dark, #071923) 42%, var(--portal-accent, #0d9488) 58%) 48%, transparent) 54%, color-mix(in srgb, color-mix(in srgb, var(--portal-dark, #071923) 34%, var(--portal-accent, #0d9488) 66%) 52%, transparent) 100%),
+    var(--portal-hero-gradient, linear-gradient(160deg, rgba(4, 18, 16, .95) 0%, rgba(6, 20, 29, .92) 50%, rgba(11, 25, 44, .96) 100%)),
     var(--public-page-hero-image, url('/images/pemkot_image.jpg'));
   background-size: 28px 28px, cover, cover;
   background-position: center, center, center 52%;
@@ -163,6 +163,7 @@ body .fixed.top-20.right-4 > :where(div, p) p:last-child {
 
 /* Dinas and Kelurahan use the same public modules; only their design tokens differ. */
 [data-portal-template="dinas"] {
+  --portal-hero-gradient: linear-gradient(160deg, rgba(10, 25, 47, 0.95) 0%, rgba(12, 74, 110, 0.9) 50%, rgba(3, 105, 161, 0.95) 100%);
   --portal-ink: #0f172a;
   --portal-dark: #0a192f;
   --portal-accent: #0284c7;
@@ -179,6 +180,7 @@ body .fixed.top-20.right-4 > :where(div, p) p:last-child {
 }
 
 [data-portal-template="kelurahan"] {
+  --portal-hero-gradient: linear-gradient(160deg, rgba(24, 24, 27, 0.94) 0%, rgba(69, 26, 3, 0.86) 50%, rgba(120, 53, 15, 0.92) 100%);
   --portal-ink: #1c1917;
   --portal-dark: #18181b;
   --portal-accent: #d97706;

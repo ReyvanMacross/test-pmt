@@ -4,8 +4,6 @@ import { getSession } from '@/lib/auth'
 import { getCurrentAdminAccess, hasAdminPermission } from '@/lib/admin-access'
 import { query } from '@/lib/db'
 import InnovationManagerClient from './InnovationManagerClient'
-import PageHeroImageSettings from '../PageHeroImageSettings'
-import { getPageHeroImage } from '@/lib/page-hero'
 
 export async function generateMetadata({ params }) {
   const { id } = await params
@@ -28,5 +26,5 @@ export default async function InnovationManagementPage({ params }) {
      FROM innovations WHERE website_id = $1 ORDER BY created_at DESC`, [website.id]
   )
   const version = JSON.stringify(result.rows.map((item) => [item.id, item.updated_at]))
-  return <><PageHeroImageSettings website={website} moduleSlug="inovasi" moduleTitle="Inovasi" initialImage={await getPageHeroImage(website.id, 'inovasi')}/><InnovationManagerClient key={version} website={website} initialInnovations={result.rows}/></>
+  return <InnovationManagerClient key={version} website={website} initialInnovations={result.rows}/>
 }

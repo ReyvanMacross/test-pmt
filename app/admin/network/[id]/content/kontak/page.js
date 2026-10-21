@@ -6,8 +6,6 @@ import { getSession } from '@/lib/auth'
 import { getCurrentAdminAccess, hasAdminPermission } from '@/lib/admin-access'
 import { query } from '@/lib/db'
 import ContactForm from './ContactForm'
-import PageHeroImageSettings from '../PageHeroImageSettings'
-import { getPageHeroImage } from '@/lib/page-hero'
 
 export async function generateMetadata({ params }) {
   const { id } = await params
@@ -34,7 +32,6 @@ export default async function ContactManagementPage({ params }) {
   const contact = contactResult.rows[0] || {}
 
   return <div className="w-full space-y-6">
-    <PageHeroImageSettings website={website} moduleSlug="kontak" moduleTitle="Kontak" initialImage={await getPageHeroImage(website.id, 'kontak')}/>
     <section className="flex flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:flex-row sm:items-center sm:justify-between sm:p-6"><div><h1 className="text-2xl font-bold tracking-tight text-slate-900">Kelola Informasi Kontak</h1><p className="mt-1 flex flex-wrap items-center gap-1.5 text-sm text-slate-500"><span>{website.name}</span><span>—</span><Link href={`/${website.subdomain}`} target="_blank" className="text-blue-600 hover:underline">/{website.subdomain} <ExternalLink className="inline h-3 w-3"/></Link></p></div><Link href={`/admin/network/${website.id}/content`} className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50"><ArrowLeft className="h-4 w-4"/>Kembali</Link></section>
     <ContactForm website={website} initialContact={contact}/>
   </div>
