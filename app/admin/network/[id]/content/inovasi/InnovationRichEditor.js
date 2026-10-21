@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from 'react'
 import { Bold, Italic, Link2, List, ListOrdered, Underline } from 'lucide-react'
+import { sanitizeRichHtml } from '@/lib/rich-text'
 
 const tools = [
   { label: 'Tebal', command: 'bold', Icon: Bold },
@@ -17,7 +18,7 @@ export default function InnovationRichEditor({ value, onChange }) {
     if (!editor.current) return
     const source = String(value || '')
     editor.current.innerHTML = /<\s*[a-z][^>]*>/i.test(source)
-      ? source
+      ? sanitizeRichHtml(source)
       : source.split(/\r?\n/).map((line) => line ? `<p>${line.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;')}</p>` : '<p><br></p>').join('')
   }, [value])
 
