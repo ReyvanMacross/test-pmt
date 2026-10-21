@@ -68,7 +68,7 @@ export default async function ContentManagementPage({ params }) {
     resContents.rows.forEach((row) => {
       const hasImages = Array.isArray(row.images) && row.images.length > 0
       const hasFiles = Array.isArray(row.files) && row.files.length > 0
-      const hasPageHero = Boolean(row.metadata?.page_hero_image?.url || row.metadata?.page_hero_image?.path)
+      const hasPageHero = Boolean(row.metadata?.page_hero_image?.url || row.metadata?.page_hero_image?.path || row.metadata?.page_hero_banner?.headline?.trim())
       const isFilled = Boolean(row.title?.trim() || row.body?.trim() || hasImages || hasFiles || hasPageHero)
       existingContentsMap[row.module_slug] = {
         title: row.title,

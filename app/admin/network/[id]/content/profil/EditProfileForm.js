@@ -150,8 +150,6 @@ export default function EditProfileForm({ website, initialProfile = {}, initialK
         showToast('error', res.error)
       } else {
         showToast('success', res?.message || 'Perubahan profil berhasil disimpan.')
-        setPageHeroFile(null)
-        setRemovePageHero(false)
         router.refresh()
       }
     } catch (err) {

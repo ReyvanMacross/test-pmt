@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useState, useSyncExternalStore } from 'react'
 import { createPortal } from 'react-dom'
 import Link from 'next/link'
 import { ArrowRight, BellRing, CalendarDays, ExternalLink, FileText, X } from 'lucide-react'
@@ -12,15 +12,15 @@ function formatDate(value) {
   return new Intl.DateTimeFormat('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }).format(date)
 }
 
+const subscribeToNothing = () => () => {}
+const getClientMounted = () => true
+const getServerMounted = () => false
+
 export default function OfficialAnnouncementPopup({ website, announcements = [], enabled = true }) {
   const [open, setOpen] = useState(false)
-  const [mounted, setMounted] = useState(false)
+  const mounted = useSyncExternalStore(subscribeToNothing, getClientMounted, getServerMounted)
   const visibleAnnouncements = announcements.slice(0, 4)
   const allAnnouncementsHref = `/${website.subdomain}/pengumuman`
-
-  useEffect(() => {
-    setMounted(true)
-  }, [])
 
   useEffect(() => {
     if (!enabled || visibleAnnouncements.length === 0) return
@@ -30,7 +30,8 @@ export default function OfficialAnnouncementPopup({ website, announcements = [],
     } catch {
       // Keep the announcement available if browser storage is disabled.
     }
-    setOpen(true)
+    const timer = window.setTimeout(() => setOpen(true), 0)
+    return () => window.clearTimeout(timer)
   }, [enabled, visibleAnnouncements.length, website.subdomain])
 
   const closePopup = useCallback(() => {

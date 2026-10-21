@@ -68,7 +68,6 @@ export default async function EditProfilePage({ params }) {
     if (savedBoundaryDescriptions && typeof savedBoundaryDescriptions === 'object' && !Array.isArray(savedBoundaryDescriptions)) {
       initialBoundaryDescriptions = savedBoundaryDescriptions
     }
-    initialProfile.page_hero_image = contentRes.rows[0]?.metadata?.page_hero_image || null
   } catch (err) {
     console.error('Error fetching daftar kelurahan profil:', err)
   }

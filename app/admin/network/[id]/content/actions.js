@@ -290,6 +290,7 @@ export async function saveModuleHeroImageAction(websiteId, moduleSlug, formData)
     if (oldImage?.url && (removeImage || hasUpload)) await removePortalFile(oldImage.url).catch(() => {})
     const websiteResult = await query('SELECT subdomain FROM websites WHERE id = $1 LIMIT 1', [websiteId])
     revalidatePath(`/admin/network/${websiteId}/content/${moduleSlug}`)
+    revalidatePath(`/admin/network/${websiteId}/content`)
     revalidatePath(`/admin/network/${websiteId}/content/hero-slider`)
     if (websiteResult.rows[0]?.subdomain) {
       revalidatePath(`/${websiteResult.rows[0].subdomain}/${moduleSlug}`)

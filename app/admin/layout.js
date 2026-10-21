@@ -1,15 +1,9 @@
 import { redirect } from 'next/navigation'
 import { getSession } from '@/lib/auth'
 import { query } from '@/lib/db'
-import { Plus_Jakarta_Sans } from 'next/font/google'
 import Sidebar from './_components/Sidebar'
 import Breadcrumb from './_components/Breadcrumb'
 import AdminMain from './_components/AdminMain'
-
-const jakarta = Plus_Jakarta_Sans({
-  subsets: ['latin'],
-  weight: ['300', '400', '500', '600', '700', '800'],
-})
 
 export const metadata = {
   title: {
@@ -60,7 +54,7 @@ export default async function AdminLayout({ children }) {
   const roleLabel = roleNames[userRole] ?? 'Administrator'
 
   return (
-    <div className={`${jakarta.className} min-h-screen w-full bg-slate-50 text-slate-800 antialiased`}>
+    <div className="min-h-screen w-full bg-slate-50 text-slate-800 antialiased">
       <div className="flex min-h-screen items-start">
         <div className="sticky top-0 h-screen shrink-0">
           <Sidebar userRole={userRole} permissions={user.permissions || []} />
