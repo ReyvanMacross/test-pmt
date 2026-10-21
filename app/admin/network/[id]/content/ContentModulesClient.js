@@ -156,7 +156,7 @@ export default function ContentModulesClient({ website, existingContents = {}, i
   const [saveToast, setSaveToast] = useState(null)
   const [saveError, setSaveError] = useState(null)
   const [moduleVisibility, setModuleVisibility] = useState(() => Object.fromEntries(
-    CONTENT_MODULES.map((module) => [module.slug, module.slug === 'hero-halaman' || initialModuleVisibility[module.slug] !== false])
+    CONTENT_MODULES.map((module) => [module.slug, module.slug === 'hero-slider' || initialModuleVisibility[module.slug] !== false])
   ))
   const [visibilitySaving, setVisibilitySaving] = useState(null)
   const [visibilityError, setVisibilityError] = useState(null)
@@ -177,7 +177,7 @@ export default function ContentModulesClient({ website, existingContents = {}, i
 
   // Status Sinkronisasi: Hitung modul unik yang sudah diinput/diedit (default 0 jika belum ada yang diinput)
   const filledCount = useMemo(() => {
-    return CONTENT_MODULES.filter((module) => moduleVisibility[module.slug] && (module.slug === 'hero-halaman' || isModuleFilled(contentMap[module.slug]))).length
+    return CONTENT_MODULES.filter((module) => moduleVisibility[module.slug] && isModuleFilled(contentMap[module.slug])).length
   }, [contentMap, moduleVisibility])
 
   const completionPercent = totalModules > 0 ? Math.min(100, Math.round((filledCount / totalModules) * 100)) : 0
@@ -218,7 +218,7 @@ export default function ContentModulesClient({ website, existingContents = {}, i
   }
 
   async function handleToggleModule(module) {
-    if (module.slug === 'hero-halaman') return
+    if (module.slug === 'hero-slider') return
     if (visibilitySaving) return
     const nextEnabled = !moduleVisibility[module.slug]
     setVisibilitySaving(module.slug)
@@ -473,20 +473,18 @@ export default function ContentModulesClient({ website, existingContents = {}, i
                       role="switch"
                       aria-checked={isEnabled}
                       aria-label={`${isEnabled ? 'Sembunyikan' : 'Tampilkan'} modul ${mod.title}`}
-                      disabled={mod.slug === 'hero-halaman' || visibilitySaving !== null || !moduleVisibilityReady}
+                      disabled={mod.slug === 'hero-slider' || visibilitySaving !== null || !moduleVisibilityReady}
                       onClick={() => handleToggleModule(mod)}
                       className={`inline-flex min-w-[7.5rem] shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-lg border px-3 py-1.5 text-xs font-semibold transition disabled:cursor-wait disabled:opacity-60 ${isEnabled ? 'border-emerald-200 bg-emerald-50 text-emerald-700' : 'border-slate-300 bg-white text-slate-600'}`}
                     >
                       <span className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors ${isEnabled ? 'bg-emerald-500' : 'bg-slate-400'}`}><span className={`absolute top-0.5 h-4 w-4 rounded-full bg-white transition-transform ${isEnabled ? 'translate-x-4' : 'translate-x-0.5'}`}/></span>
-                      {mod.slug === 'hero-halaman' ? 'Selalu aktif' : visibilitySaving === mod.slug ? 'Menyimpan…' : isEnabled ? 'Tampil' : 'Disembunyikan'}
+                      {mod.slug === 'hero-slider' ? 'Selalu aktif' : visibilitySaving === mod.slug ? 'Menyimpan…' : isEnabled ? 'Tampil' : 'Disembunyikan'}
                     </button>
-                    {mod.actionType === 'Edit' || ['hero-slider', 'hero-halaman', 'berita', 'galeri-gambar', 'galeri-video', 'pengumuman', 'inovasi', 'agenda-kegiatan', 'layanan'].includes(mod.slug) ? (
+                    {mod.actionType === 'Edit' || ['hero-slider', 'berita', 'galeri-gambar', 'galeri-video', 'pengumuman', 'inovasi', 'agenda-kegiatan', 'layanan'].includes(mod.slug) ? (
                     <Link
                       href={
                           mod.slug === 'hero-slider'
                             ? `/admin/network/${website.id}/content/hero-slider`
-                            : mod.slug === 'hero-halaman'
-                              ? `/admin/network/${website.id}/content/hero-halaman`
                             : mod.slug === 'berita'
                             ? `/admin/network/${website.id}/content/berita`
                             : mod.slug === 'galeri-gambar'

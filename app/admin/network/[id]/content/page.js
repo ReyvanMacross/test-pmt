@@ -45,7 +45,7 @@ export default async function ContentManagementPage({ params }) {
       [id]
     )
     visibilityResult.rows.forEach((row) => {
-      if (Object.hasOwn(moduleVisibility, row.module_slug) && row.module_slug !== 'hero-halaman') moduleVisibility[row.module_slug] = row.is_enabled !== false
+      if (Object.hasOwn(moduleVisibility, row.module_slug) && row.module_slug !== 'hero-slider') moduleVisibility[row.module_slug] = row.is_enabled !== false
     })
   } catch (error) {
     moduleVisibilityReady = false

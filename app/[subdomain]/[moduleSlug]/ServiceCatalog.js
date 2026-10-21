@@ -28,7 +28,7 @@ function FeaturedService({ service }) {
   </article>
 }
 
-export default function ServiceCatalog({ website, services = [], heroImage }) {
+export default function ServiceCatalog({ website, services = [], heroImage, heroBanner, template }) {
   const [category, setCategory] = useState('all')
   const [search, setSearch] = useState('')
   const [selectedId, setSelectedId] = useState(null)
@@ -40,7 +40,7 @@ export default function ServiceCatalog({ website, services = [], heroImage }) {
   }, [services, category, search])
 
   return <>
-    <PublicPageHero image={heroImage} eyebrow="Informasi Perizinan & Layanan Warga" title="Katalog Layanan Publik Terpadu" description={`Panduan persyaratan, prosedur pengajuan, estimasi waktu penyelesaian, dan kanal resmi pelayanan masyarakat di ${website.name}.`}>
+    <PublicPageHero template={template} image={heroImage} banner={heroBanner} eyebrow="Informasi Perizinan & Layanan Warga" title="Katalog Layanan Publik Terpadu" description={`Panduan persyaratan, prosedur pengajuan, estimasi waktu penyelesaian, dan kanal resmi pelayanan masyarakat di ${website.name}.`}>
       <form className="mx-auto mt-7 flex w-full max-w-2xl items-center gap-2 rounded-xl border border-white/20 bg-slate-950/50 p-2 text-left shadow-lg backdrop-blur-sm" onSubmit={(event) => event.preventDefault()} role="search"><Search className="ml-2 h-5 w-5 shrink-0 text-slate-300"/><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Cari layanan (contoh: e-KTP, KK, Surat Pindah)..." className="min-w-0 flex-1 bg-transparent px-2 py-2 text-sm text-white outline-none placeholder:text-slate-300" aria-label="Cari layanan"/><button type="submit" className="rounded-lg bg-teal-500 px-5 py-2.5 text-sm font-bold text-white transition hover:bg-teal-400">Cari</button></form>
     </PublicPageHero>
     <main className="mx-auto w-full max-w-[1440px] space-y-8 px-4 py-7 sm:px-6 sm:py-10 lg:px-10">

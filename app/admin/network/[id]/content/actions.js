@@ -34,7 +34,7 @@ export async function setWebsiteModuleVisibilityAction(websiteId, moduleSlug, is
     if (!CONTENT_MODULES.some((module) => module.slug === moduleSlug)) {
       return { error: 'Modul yang dipilih tidak dikenali.' }
     }
-    if (moduleSlug === 'hero-halaman') return { error: 'Modul Hero Halaman selalu aktif di pengelolaan admin.' }
+    if (moduleSlug === 'hero-slider') return { error: 'Hero Slider selalu aktif dan dikelola melalui pengaturan banner.' }
     await authorizeWebsite(websiteId, session)
 
     await query(
@@ -257,11 +257,18 @@ export async function saveModuleHeroImageAction(websiteId, moduleSlug, formData)
     const session = await getSession()
     if (!session) return { error: 'Sesi berakhir. Silakan masuk kembali.' }
     await authorizeWebsite(websiteId, session)
-    if (!CONTENT_MODULES.some((module) => module.slug === moduleSlug) || ['beranda', 'hero-slider', 'hero-halaman', 'profil-pimpinan', 'struktur-organisasi'].includes(moduleSlug)) return { error: 'Gambar header tidak dapat diatur untuk halaman ini.' }
+    if (!CONTENT_MODULES.some((module) => module.slug === moduleSlug) || ['beranda', 'hero-slider', 'profil-pimpinan', 'struktur-organisasi'].includes(moduleSlug)) return { error: 'Gambar header tidak dapat diatur untuk halaman ini.' }
     const file = formData.get('page_hero_file')
     const removeImage = formData.get('remove_page_hero') === 'true'
     const hasUpload = file && typeof file === 'object' && typeof file.size === 'number' && file.size > 0
-    if (!hasUpload && !removeImage) return { error: 'Pilih gambar header terlebih dahulu.' }
+    const bannerInput = {
+      badge_text: String(formData.get('badge_text') || '').trim().slice(0, 120),
+      badge_color: String(formData.get('badge_color') || 'teal'),
+      headline: String(formData.get('headline') || '').trim().slice(0, 180),
+      description: String(formData.get('description') || '').trim().slice(0, 1200),
+    }
+    if (!['teal', 'blue', 'amber', 'emerald', 'rose'].includes(bannerInput.badge_color)) return { error: 'Tema badge banner tidak valid.' }
+    if (!hasUpload && !removeImage && !bannerInput.headline) return { error: 'Isi judul banner atau pilih gambar header.' }
     if (hasUpload && !['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) return { error: 'Gambar header harus JPG, PNG, atau WebP.' }
     if (hasUpload && file.size > 5 * 1024 * 1024) return { error: 'Gambar header maksimal 5 MB.' }
 
@@ -270,11 +277,12 @@ export async function saveModuleHeroImageAction(websiteId, moduleSlug, formData)
     const row = current.rows[0] || {}
     const metadata = row.metadata && typeof row.metadata === 'object' && !Array.isArray(row.metadata) ? { ...row.metadata } : {}
     const oldImage = metadata.page_hero_image
+    if (bannerInput.headline) metadata.page_hero_banner = bannerInput
     if (hasUpload) {
       const ext = path.extname(file.name || '').toLowerCase() || ({ 'image/jpeg': '.jpg', 'image/png': '.png', 'image/webp': '.webp' }[file.type])
       uploaded = await uploadPortalFile({ file, objectPath: `websites/${websiteId}/page-heroes/${moduleSlug}/${randomUUID()}${ext}` })
       metadata.page_hero_image = { url: uploaded.publicUrl, path: uploaded.path, name: file.name, type: file.type }
-    } else delete metadata.page_hero_image
+    } else if (removeImage) delete metadata.page_hero_image
     await query(`INSERT INTO contents (website_id, menu_item_id, title, body, images, files, metadata, updated_at)
       VALUES ($1, $2, $3, $4, $5::jsonb, $6::jsonb, $7::jsonb, NOW())
       ON CONFLICT (website_id, menu_item_id) DO UPDATE SET metadata = EXCLUDED.metadata, updated_at = NOW()`,
@@ -282,7 +290,11 @@ export async function saveModuleHeroImageAction(websiteId, moduleSlug, formData)
     if (oldImage?.url && (removeImage || hasUpload)) await removePortalFile(oldImage.url).catch(() => {})
     const websiteResult = await query('SELECT subdomain FROM websites WHERE id = $1 LIMIT 1', [websiteId])
     revalidatePath(`/admin/network/${websiteId}/content/${moduleSlug}`)
-    if (websiteResult.rows[0]?.subdomain) revalidatePath(`/${websiteResult.rows[0].subdomain}/${moduleSlug}`)
+    revalidatePath(`/admin/network/${websiteId}/content/hero-slider`)
+    if (websiteResult.rows[0]?.subdomain) {
+      revalidatePath(`/${websiteResult.rows[0].subdomain}/${moduleSlug}`)
+      if (moduleSlug === 'program-dan-kegiatan') revalidatePath(`/${websiteResult.rows[0].subdomain}/inovasi`)
+    }
     return { success: true, image: metadata.page_hero_image || null, message: 'Gambar header berhasil disimpan.' }
   } catch (error) {
     if (uploaded?.publicUrl) await removePortalFile(uploaded.publicUrl).catch(() => {})

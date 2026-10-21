@@ -165,7 +165,7 @@ export default async function DashboardPage() {
       console.error('Role dashboard data error:', error)
     }
 
-    const visibleModuleSlugs = new Set(CONTENT_MODULES.filter((module) => module.slug !== 'hero-halaman' && moduleVisibility[module.slug]).map((module) => module.slug))
+    const visibleModuleSlugs = new Set(CONTENT_MODULES.filter((module) => moduleVisibility[module.slug]).map((module) => module.slug))
     const visibleFilledCount = [...filled].filter((slug) => visibleModuleSlugs.has(slug)).length
     return <RoleDashboard user={user} website={website} filledModules={visibleFilledCount} totalModules={visibleModuleSlugs.size} activities={activities} canViewAllLogs={canViewAllLogs} />
   }

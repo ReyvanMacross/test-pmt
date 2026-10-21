@@ -2,8 +2,9 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Check, ChevronDown, ImagePlus, Info, LoaderCircle, RefreshCw, Upload, X } from 'lucide-react'
+import { Check, ChevronDown, ImagePlus, Info, LoaderCircle, RefreshCw, Upload, X, Images } from 'lucide-react'
 import { saveHeroSlidesAction } from './actions'
+import { saveModuleHeroImageAction } from '../actions'
 
 const MAX_IMAGE_SIZE = 2 * 1024 * 1024
 const colors = [
@@ -24,7 +25,7 @@ function resizeDescription(element) {
   element.style.height = `${element.scrollHeight}px`
 }
 
-export default function HeroSliderManager({ websiteId, slides }) {
+function HomeSlidesEditor({ websiteId, slides }) {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
   const [notice, setNotice] = useState(null)
@@ -150,4 +151,69 @@ export default function HeroSliderManager({ websiteId, slides }) {
     })}
     <div className="flex justify-end rounded-2xl border border-slate-200 bg-white p-4"><button type="submit" disabled={loading} className="inline-flex items-center gap-2 rounded-xl bg-blue-700 px-5 py-2.5 text-sm font-bold text-white hover:bg-blue-800 disabled:cursor-not-allowed disabled:opacity-60">{loading ? <><LoaderCircle className="h-4 w-4 animate-spin"/>Menyimpan...</> : <><Check className="h-4 w-4"/>Simpan Hero Slider</>}</button></div>
   </form>
+}
+
+const bannerInputClass = 'w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-800 placeholder:text-slate-400 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10'
+
+function PageBannerEditor({ websiteId, page, settings = {} }) {
+  const router = useRouter()
+  const [preview, setPreview] = useState('')
+  const [file, setFile] = useState(null)
+  const [removeImage, setRemoveImage] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [notice, setNotice] = useState(null)
+  const currentImage = settings.image?.url || settings.image?.path || ''
+  const banner = settings.banner || {}
+  const image = removeImage ? '' : preview || currentImage
+  const fileRef = useRef(null)
+  useEffect(() => () => { if (preview.startsWith('blob:')) URL.revokeObjectURL(preview) }, [preview])
+
+  async function submit(event) {
+    event.preventDefault()
+    const formData = new FormData(event.currentTarget)
+    if (file) formData.set('page_hero_file', file)
+    if (removeImage) formData.set('remove_page_hero', 'true')
+    setSaving(true); setNotice(null)
+    try {
+      const result = await saveModuleHeroImageAction(websiteId, page.moduleSlug, formData)
+      if (result?.error) setNotice({ type: 'error', text: result.error })
+      else { setNotice({ type: 'success', text: 'Banner halaman berhasil disimpan.' }); setFile(null); setPreview(''); setRemoveImage(false); if (fileRef.current) fileRef.current.value = ''; router.refresh() }
+    } catch (error) { setNotice({ type: 'error', text: error.message || 'Gagal menyimpan banner halaman.' }) }
+    finally { setSaving(false) }
+  }
+
+  function selectFile(event) {
+    const chosen = event.target.files?.[0]
+    if (!chosen) return
+    if (chosen.size > 5 * 1024 * 1024) { event.target.value = ''; setNotice({ type: 'error', text: 'Ukuran gambar maksimal 5 MB.' }); return }
+    if (preview.startsWith('blob:')) URL.revokeObjectURL(preview)
+    setFile(chosen); setPreview(URL.createObjectURL(chosen)); setRemoveImage(false); setNotice(null)
+  }
+
+  return <form onSubmit={submit} className="space-y-5 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+    {notice && <div role={notice.type === 'error' ? 'alert' : 'status'} className={`rounded-xl border px-4 py-3 text-sm ${notice.type === 'error' ? 'border-rose-200 bg-rose-50 text-rose-700' : 'border-emerald-200 bg-emerald-50 text-emerald-700'}`}>{notice.text}</div>}
+    <div className="grid gap-4 md:grid-cols-3">
+      <div><label htmlFor="page-badge" className="mb-1.5 block text-sm font-semibold text-slate-700">Badge Category Text</label><input id="page-badge" name="badge_text" maxLength={120} defaultValue={banner.badge_text || ''} placeholder="Contoh: INFORMASI KEWILAYAHAN" className={bannerInputClass}/></div>
+      <div><label htmlFor="page-badge-color" className="mb-1.5 block text-sm font-semibold text-slate-700">Tema Warna Badge</label><select id="page-badge-color" name="badge_color" defaultValue={banner.badge_color || 'teal'} className={bannerInputClass}><option value="teal">Teal</option><option value="blue">Biru</option><option value="amber">Kuning</option><option value="emerald">Hijau</option><option value="rose">Merah muda</option></select></div>
+      <div><label htmlFor="page-headline" className="mb-1.5 block text-sm font-semibold text-slate-700">Headline Utama (Judul Banner)</label><input required id="page-headline" name="headline" maxLength={180} defaultValue={banner.headline || page.defaultHeadline || page.label.replace(/ \(1 Banner\)$/, '')} className={bannerInputClass}/></div>
+    </div>
+    <div><label htmlFor="page-description" className="mb-1.5 block text-sm font-semibold text-slate-700">Deskripsi Paragraf Singkat</label><textarea id="page-description" name="description" maxLength={1200} rows={3} defaultValue={banner.description || page.defaultDescription || ''} placeholder="Tulis keterangan singkat yang tampil di bawah judul." className={`${bannerInputClass} resize-y`}/></div>
+    <div className="border-t border-slate-100 pt-4"><label htmlFor="page-hero-file" className="mb-2 block text-sm font-semibold text-slate-700">Gambar Latar Belakang Banner</label><div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(220px,.48fr)]">
+      <div className="relative flex aspect-video min-h-48 items-center justify-center overflow-hidden rounded-xl border border-slate-200 bg-slate-100">{image ? <img src={image} alt={`Pratinjau ${page.label}`} className="absolute inset-0 h-full w-full object-cover"/> : <div className="px-6 text-center text-sm text-slate-500"><ImagePlus className="mx-auto mb-2 h-7 w-7 text-slate-400"/><p>Belum ada gambar latar</p></div>}</div>
+      <div className="flex flex-col justify-between gap-4 rounded-xl border border-slate-200 bg-slate-50 p-4"><div><p className="text-xs font-bold uppercase tracking-wide text-slate-800">Ketentuan Berkas</p><ul className="mt-2 space-y-1.5 text-xs leading-relaxed text-slate-500"><li>• Format: JPG, PNG, WebP</li><li>• Resolusi ideal: 1920 × 1080 px</li><li>• Ukuran maksimal berkas: 5 MB</li></ul>{file && <p className="mt-3 break-all text-xs text-slate-600">{file.name}</p>}</div><div className="flex flex-col gap-2"><label htmlFor="page-hero-file" className="inline-flex min-h-10 cursor-pointer items-center justify-center gap-2 rounded-xl border border-blue-200 bg-blue-50 px-3 py-2 text-sm font-semibold text-blue-700 hover:bg-blue-100"><Upload className="h-4 w-4"/>{currentImage ? 'Ganti Gambar' : 'Unggah Gambar'}<input ref={fileRef} id="page-hero-file" type="file" accept="image/jpeg,image/png,image/webp" onChange={selectFile} className="sr-only"/></label>{currentImage && <button type="button" onClick={() => { setRemoveImage((value) => !value); setFile(null); setPreview(''); if (fileRef.current) fileRef.current.value = '' }} className="rounded-lg py-2 text-xs font-semibold text-rose-600 hover:bg-rose-50">{removeImage ? 'Batalkan penghapusan gambar' : 'Hapus gambar terpasang'}</button>}</div></div>
+    </div></div>
+    <div className="flex justify-end border-t border-slate-100 pt-4"><button type="submit" disabled={saving} className="inline-flex items-center gap-2 rounded-xl bg-blue-700 px-5 py-2.5 text-sm font-bold text-white hover:bg-blue-800 disabled:opacity-60">{saving ? <><LoaderCircle className="h-4 w-4 animate-spin"/>Menyimpan…</> : <><Check className="h-4 w-4"/>Simpan Banner Halaman</>}</button></div>
+  </form>
+}
+
+export default function HeroSliderManager({ websiteId, slides, pageOptions, pageHeroSettings }) {
+  const [selectedPage, setSelectedPage] = useState('beranda')
+  const selected = pageOptions.find((page) => page.value === selectedPage) || pageOptions[0]
+  return <div className="space-y-5">
+    <div className="flex flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex items-start gap-3"><span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-700"><Images className="h-5 w-5"/></span><div><label htmlFor="hero-page-selector" className="block text-sm font-bold text-slate-900">Pilih Halaman yang Ingin Dikelola</label><p className="mt-1 text-xs text-slate-500">Kelola tiga slide Beranda atau satu banner halaman lainnya.</p></div></div>
+      <select id="hero-page-selector" value={selectedPage} onChange={(event) => setSelectedPage(event.target.value)} className="w-full rounded-xl border-2 border-blue-600 bg-white px-3.5 py-3 text-sm font-semibold text-blue-900 outline-none focus:ring-4 focus:ring-blue-500/10 sm:max-w-[440px]">{pageOptions.map((page) => <option key={page.value} value={page.value}>{page.label}</option>)}</select>
+    </div>
+    {selected.value === 'beranda' ? <HomeSlidesEditor websiteId={websiteId} slides={slides}/> : <PageBannerEditor key={selected.value} websiteId={websiteId} page={selected} settings={pageHeroSettings[selected.moduleSlug]}/>}
+  </div>
 }

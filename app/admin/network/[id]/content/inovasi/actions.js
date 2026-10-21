@@ -10,6 +10,7 @@ import { getSession } from '@/lib/auth'
 import { getCurrentAdminAccess, hasAdminPermission } from '@/lib/admin-access'
 import pool, { query } from '@/lib/db'
 import { removePortalFile, uploadPortalFile } from '@/lib/storage'
+import { sanitizeRichHtml } from '@/lib/rich-text'
 
 const MAX_COVER_SIZE = 5 * 1024 * 1024
 const ACCEPTED_IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif'])
@@ -45,7 +46,7 @@ function readForm(formData) {
   if (launchYear !== null && (!Number.isInteger(launchYear) || launchYear < 1990 || launchYear > 2099)) throw new Error('Tahun peluncuran harus antara 1990 dan 2099.')
   return {
     title,
-    description,
+    description: sanitizeRichHtml(description),
     launchYear,
     applicationUrl: optionalHttpUrl(formData.get('application_url'), 'Link aplikasi/website'),
     videoUrl: optionalHttpUrl(formData.get('video_url'), 'Link video/profil'),
