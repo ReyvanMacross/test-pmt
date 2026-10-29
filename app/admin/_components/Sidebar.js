@@ -63,7 +63,7 @@ export default function Sidebar({ userRole, permissions = [] }) {
         >
           <Image
             alt="Logo Kota Bandung"
-            src="/images/logo/bdg_putih.png"
+            src="/images/logo_bdg_putih.png"
             width={32}
             height={32}
             className="w-full h-full object-contain"
