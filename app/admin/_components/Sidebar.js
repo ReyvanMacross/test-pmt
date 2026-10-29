@@ -63,7 +63,7 @@ export default function Sidebar({ userRole, permissions = [] }) {
         >
           <Image
             alt="Logo Kota Bandung"
-            src="/images/Logo_BDG_WARNA.png"
+            src="/images/logo/bdg_putih.png"
             width={32}
             height={32}
             className="w-full h-full object-contain"
@@ -135,18 +135,18 @@ export default function Sidebar({ userRole, permissions = [] }) {
                   transition: 'all 0.15s ease',
                   ...(isKelolaWebsiteActive()
                     ? {
-                        backgroundColor: '#1E88E5',
-                        color: '#FFFFFF',
-                        fontWeight: 600,
-                        borderLeft: '4px solid #FFFFFF',
-                        boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
-                      }
+                      backgroundColor: '#1E88E5',
+                      color: '#FFFFFF',
+                      fontWeight: 600,
+                      borderLeft: '4px solid #FFFFFF',
+                      boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
+                    }
                     : {
-                        backgroundColor: 'transparent',
-                        color: '#DBEAFE',
-                        fontWeight: 500,
-                        borderLeft: '4px solid transparent',
-                      }),
+                      backgroundColor: 'transparent',
+                      color: '#DBEAFE',
+                      fontWeight: 500,
+                      borderLeft: '4px solid transparent',
+                    }),
                 }}
                 className="hover:bg-white/10 hover:text-white"
               >
@@ -182,18 +182,18 @@ export default function Sidebar({ userRole, permissions = [] }) {
                   transition: 'all 0.15s ease',
                   ...(isDashboardActive()
                     ? {
-                        backgroundColor: '#1E88E5',
-                        color: '#FFFFFF',
-                        fontWeight: 600,
-                        borderLeft: '4px solid #FFFFFF',
-                        boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
-                      }
+                      backgroundColor: '#1E88E5',
+                      color: '#FFFFFF',
+                      fontWeight: 600,
+                      borderLeft: '4px solid #FFFFFF',
+                      boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
+                    }
                     : {
-                        backgroundColor: 'transparent',
-                        color: '#DBEAFE',
-                        fontWeight: 500,
-                        borderLeft: '4px solid transparent',
-                      }),
+                      backgroundColor: 'transparent',
+                      color: '#DBEAFE',
+                      fontWeight: 500,
+                      borderLeft: '4px solid transparent',
+                    }),
                 }}
                 className="hover:bg-white/10 hover:text-white"
               >
@@ -219,149 +219,149 @@ export default function Sidebar({ userRole, permissions = [] }) {
               <>
                 {/* 3. Templates Web */}
                 {hasPermission('manage-templates') && <>
-                <li>
-                  <Link
-                    href="/admin/templates"
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '12px',
-                      padding: '10px 14px',
-                      borderRadius: '8px',
-                      fontSize: '14px',
-                      textDecoration: 'none',
-                      transition: 'all 0.15s ease',
-                      ...(isTemplatesActive()
-                        ? {
+                  <li>
+                    <Link
+                      href="/admin/templates"
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '12px',
+                        padding: '10px 14px',
+                        borderRadius: '8px',
+                        fontSize: '14px',
+                        textDecoration: 'none',
+                        transition: 'all 0.15s ease',
+                        ...(isTemplatesActive()
+                          ? {
                             backgroundColor: '#1E88E5',
                             color: '#FFFFFF',
                             fontWeight: 600,
                             borderLeft: '4px solid #FFFFFF',
                             boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
                           }
-                        : {
+                          : {
                             backgroundColor: 'transparent',
                             color: '#DBEAFE',
                             fontWeight: 500,
                             borderLeft: '4px solid transparent',
                           }),
-                    }}
-                    className="hover:bg-white/10 hover:text-white"
-                  >
-                    <svg
-                      style={{ width: '18px', height: '18px', flexShrink: 0, color: isTemplatesActive() ? '#FFFFFF' : '#BFDBFE' }}
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
+                      }}
+                      className="hover:bg-white/10 hover:text-white"
                     >
-                      <path
-                        d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth="2"
-                      />
-                    </svg>
-                    <span>Templates Web</span>
-                  </Link>
-                </li>
+                      <svg
+                        style={{ width: '18px', height: '18px', flexShrink: 0, color: isTemplatesActive() ? '#FFFFFF' : '#BFDBFE' }}
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth="2"
+                        />
+                      </svg>
+                      <span>Templates Web</span>
+                    </Link>
+                  </li>
                 </>}
 
                 {/* 4. User Management */}
                 {hasPermission('manage-users') && <>
-                <li>
-                  <Link
-                    href="/admin/users"
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '12px',
-                      padding: '10px 14px',
-                      borderRadius: '8px',
-                      fontSize: '14px',
-                      textDecoration: 'none',
-                      transition: 'all 0.15s ease',
-                      ...(isUsersActive()
-                        ? {
+                  <li>
+                    <Link
+                      href="/admin/users"
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '12px',
+                        padding: '10px 14px',
+                        borderRadius: '8px',
+                        fontSize: '14px',
+                        textDecoration: 'none',
+                        transition: 'all 0.15s ease',
+                        ...(isUsersActive()
+                          ? {
                             backgroundColor: '#1E88E5',
                             color: '#FFFFFF',
                             fontWeight: 600,
                             borderLeft: '4px solid #FFFFFF',
                             boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
                           }
-                        : {
+                          : {
                             backgroundColor: 'transparent',
                             color: '#DBEAFE',
                             fontWeight: 500,
                             borderLeft: '4px solid transparent',
                           }),
-                    }}
-                    className="hover:bg-white/10 hover:text-white"
-                  >
-                    <svg
-                      style={{ width: '18px', height: '18px', flexShrink: 0, color: isUsersActive() ? '#FFFFFF' : '#BFDBFE' }}
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
+                      }}
+                      className="hover:bg-white/10 hover:text-white"
                     >
-                      <path
-                        d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth="2"
-                      />
-                    </svg>
-                    <span>User Management</span>
-                  </Link>
-                </li>
+                      <svg
+                        style={{ width: '18px', height: '18px', flexShrink: 0, color: isUsersActive() ? '#FFFFFF' : '#BFDBFE' }}
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth="2"
+                        />
+                      </svg>
+                      <span>User Management</span>
+                    </Link>
+                  </li>
                 </>}
 
                 {/* 5. Activity Logs */}
                 {(hasPermission('view-all-logs') || hasPermission('view-own-logs')) && <>
-                <li>
-                  <Link
-                    href="/admin/activities"
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '12px',
-                      padding: '10px 14px',
-                      borderRadius: '8px',
-                      fontSize: '14px',
-                      textDecoration: 'none',
-                      transition: 'all 0.15s ease',
-                      ...(isActivitiesActive()
-                        ? {
+                  <li>
+                    <Link
+                      href="/admin/activities"
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '12px',
+                        padding: '10px 14px',
+                        borderRadius: '8px',
+                        fontSize: '14px',
+                        textDecoration: 'none',
+                        transition: 'all 0.15s ease',
+                        ...(isActivitiesActive()
+                          ? {
                             backgroundColor: '#1E88E5',
                             color: '#FFFFFF',
                             fontWeight: 600,
                             borderLeft: '4px solid #FFFFFF',
                             boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
                           }
-                        : {
+                          : {
                             backgroundColor: 'transparent',
                             color: '#DBEAFE',
                             fontWeight: 500,
                             borderLeft: '4px solid transparent',
                           }),
-                    }}
-                    className="hover:bg-white/10 hover:text-white"
-                  >
-                    <svg
-                      style={{ width: '18px', height: '18px', flexShrink: 0, color: isActivitiesActive() ? '#FFFFFF' : '#BFDBFE' }}
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
+                      }}
+                      className="hover:bg-white/10 hover:text-white"
                     >
-                      <path
-                        d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth="2"
-                      />
-                    </svg>
-                    <span>Activity Logs</span>
-                  </Link>
-                </li>
+                      <svg
+                        style={{ width: '18px', height: '18px', flexShrink: 0, color: isActivitiesActive() ? '#FFFFFF' : '#BFDBFE' }}
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth="2"
+                        />
+                      </svg>
+                      <span>Activity Logs</span>
+                    </Link>
+                  </li>
                 </>}
               </>
             )}
@@ -400,18 +400,18 @@ export default function Sidebar({ userRole, permissions = [] }) {
                   transition: 'all 0.15s ease',
                   ...(isPasswordActive()
                     ? {
-                        backgroundColor: '#1E88E5',
-                        color: '#FFFFFF',
-                        fontWeight: 600,
-                        borderLeft: '4px solid #FFFFFF',
-                        boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
-                      }
+                      backgroundColor: '#1E88E5',
+                      color: '#FFFFFF',
+                      fontWeight: 600,
+                      borderLeft: '4px solid #FFFFFF',
+                      boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
+                    }
                     : {
-                        backgroundColor: 'transparent',
-                        color: '#DBEAFE',
-                        fontWeight: 500,
-                        borderLeft: '4px solid transparent',
-                      }),
+                      backgroundColor: 'transparent',
+                      color: '#DBEAFE',
+                      fontWeight: 500,
+                      borderLeft: '4px solid transparent',
+                    }),
                 }}
                 className="hover:bg-white/10 hover:text-white"
               >
