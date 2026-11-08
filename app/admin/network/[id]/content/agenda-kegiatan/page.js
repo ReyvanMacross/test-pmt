@@ -23,7 +23,7 @@ export default async function AgendaManagementPage({ params }) {
   if (!website) notFound()
   if (!(await canManageWebsite(session, website.id, website.user_id))) redirect('/admin/network')
   const result = await query(
-    `SELECT id, title, description, start_date, end_date, time_range, location, organizer, created_at, updated_at
+    `SELECT id, title, description, start_date::text AS start_date, end_date::text AS end_date, time_range, location, organizer, created_at, updated_at
      FROM agendas WHERE website_id = $1 ORDER BY start_date ASC, created_at DESC`, [website.id]
   )
   const version = JSON.stringify(result.rows.map((agenda) => [agenda.id, agenda.updated_at]))

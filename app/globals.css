@@ -297,6 +297,9 @@ body .fixed.top-20.right-4 > :where(div, p) p:last-child {
 }
 /* Rich text saved by the admin editor, rendered consistently on public pages. */
 .rich-content > :first-child { margin-top: 0; }
+.rich-editor,
+.rich-editor * { font-family: var(--font-sans) !important; }
+.rich-editor { direction: ltr; text-align: left; unicode-bidi: normal; }
 .rich-content > :last-child { margin-bottom: 0; }
 .rich-content div { min-height: 1em; }
 .rich-content p,

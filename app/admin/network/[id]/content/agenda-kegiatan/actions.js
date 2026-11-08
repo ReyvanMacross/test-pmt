@@ -64,7 +64,7 @@ export async function createAgendaAction(websiteId, formData) {
       const result = await client.query(
         `INSERT INTO agendas (website_id, title, description, start_date, end_date, time_range, location, organizer, created_at, updated_at)
          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW(), NOW())
-         RETURNING id, title, description, start_date, end_date, time_range, location, organizer, created_at, updated_at`,
+         RETURNING id, title, description, start_date::text AS start_date, end_date::text AS end_date, time_range, location, organizer, created_at, updated_at`,
         [website.id, agenda.title, agenda.description, agenda.startDate, agenda.endDate, agenda.timeRange, agenda.location, agenda.organizer]
       )
       created = result.rows[0]
@@ -87,7 +87,7 @@ export async function updateAgendaAction(websiteId, agendaId, formData) {
       const result = await client.query(
         `UPDATE agendas SET title = $1, description = $2, start_date = $3, end_date = $4, time_range = $5, location = $6, organizer = $7, updated_at = NOW()
          WHERE id = $8 AND website_id = $9
-         RETURNING id, title, description, start_date, end_date, time_range, location, organizer, created_at, updated_at`,
+         RETURNING id, title, description, start_date::text AS start_date, end_date::text AS end_date, time_range, location, organizer, created_at, updated_at`,
         [agenda.title, agenda.description, agenda.startDate, agenda.endDate, agenda.timeRange, agenda.location, agenda.organizer, agendaId, website.id]
       )
       updated = result.rows[0]

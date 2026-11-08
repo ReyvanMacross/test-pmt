@@ -59,11 +59,11 @@ export default function OfficialAnnouncementPopup({ website, announcements = [],
 
   if (!open || !mounted) return null
 
-  return createPortal(<div data-portal-template={website.template_slug || 'kecamatan'} className="fixed inset-0 z-[1200] flex items-center justify-center bg-slate-950/65 p-4 backdrop-blur-sm sm:p-6" role="presentation">
+  return createPortal(<div data-portal-template={website.template_slug || 'kecamatan'} className="fixed inset-0 z-[1200] flex items-center justify-center bg-slate-950/45 p-4 backdrop-blur-md sm:p-6" role="presentation">
     <button type="button" aria-label="Tutup pengumuman" onClick={closePopup} className="absolute inset-0 h-full w-full cursor-default"/>
     <section role="dialog" aria-modal="true" aria-labelledby="official-announcement-title" className="relative z-10 flex max-h-[min(86svh,52rem)] w-full max-w-2xl animate-[announcement-in_.22s_ease-out] flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl">
       <header className="relative overflow-hidden bg-[#071923] px-5 py-6 text-white sm:px-8 sm:py-7">
-        <div aria-hidden="true" className="absolute inset-0 bg-gradient-to-br from-teal-700/30 via-transparent to-transparent"/>
+        <div aria-hidden="true" className="absolute inset-0" style={{ background: 'linear-gradient(135deg, color-mix(in srgb, var(--portal-accent) 32%, transparent), transparent 68%)' }}/>
         <div className="relative flex items-start gap-4 pr-9">
           <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-teal-300/25 bg-teal-400/15 text-teal-200"><BellRing className="h-6 w-6"/></span>
           <div className="min-w-0">

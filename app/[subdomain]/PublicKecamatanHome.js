@@ -14,6 +14,8 @@ function EmptySafeText({ value, className = '' }) {
   return html ? <div className={`rich-content ${className}`} dangerouslySetInnerHTML={{ __html: html }}/> : null
 }
 
+function localDateKey(date) { return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}` }
+
 function PublicModuleCards({ portal }) {
   const iconBySlug = {
     profil: ContactRound, beranda: Home, 'program-dan-kegiatan': ClipboardList, 'struktur-organisasi': Network, 'profil-pimpinan': Star, layanan: Radio, kontak: Phone, ppid: ShieldCheck, 'ppid-utama': ShieldCheck, 'daftar-informasi-publik': Info, 'daftar-informasi-dikecualikan': LockKeyhole, 'informasi-wajib-berkala': CalendarClock, 'informasi-tersedia-setiap-saat': Clock4, 'informasi-serta-merta': TriangleAlert, inovasi: Lightbulb, berita: Newspaper, 'galeri-gambar': ImageIcon, 'galeri-video': Video, informasi: Info, pengumuman: Bell, 'agenda-kegiatan': CalendarDays,
@@ -46,6 +48,7 @@ function PublicModuleCards({ portal }) {
     { slugs: ['pengumuman'] },
     { slugs: ['galeri-gambar'] },
     { slugs: ['galeri-video'] },
+    { slugs: ['informasi'] },
     { slugs: ['ppid', 'ppid-utama'], title: 'Layanan PPID' },
     { slugs: ['kontak'] },
     { slugs: ['berita'] },
@@ -70,7 +73,8 @@ export default function PublicKecamatanHome({ portal }) {
   const profileFallback = profileContent?.body && profileContent.body !== 'Konten profil wilayah' ? profileContent.body : ''
   const profileSummary = plainContent(profile?.visi || profileFallback)
   const latestNews = isModuleEnabled('berita') ? news.slice(0, 3) : []
-  const upcomingAgenda = isModuleEnabled('agenda-kegiatan') ? agendas.filter((item) => new Date(item.end_date || item.start_date) >= new Date(new Date().toDateString())).slice(0, 3) : []
+  const todayKey = localDateKey(new Date())
+  const upcomingAgenda = isModuleEnabled('agenda-kegiatan') ? agendas.filter((item) => String(item.end_date || item.start_date || '').slice(0, 10) >= todayKey).slice(0, 3) : []
   const stats = [
     ['Luas Wilayah', profile?.luas_wilayah, 'km²'], ['Rukun Warga', profile?.jumlah_rw, 'RW'], ['Rukun Tetangga', profile?.jumlah_rt, 'RT'], ['Total Penduduk', profile?.total_jiwa, 'Jiwa'],
   ].filter(([, value]) => value !== null && value !== undefined && String(value).trim() !== '')
@@ -80,8 +84,6 @@ export default function PublicKecamatanHome({ portal }) {
     {isModuleEnabled('hero-slider') && heroSlides.length > 0 && <HeroSlider slides={heroSlides} website={website} base={base} moduleVisibility={portal.moduleVisibility} announcements={announcements}/>}
 
     {isModuleEnabled('beranda') && hasIntroduction && <section className="border-b border-slate-100 bg-white px-5 py-10 text-center sm:py-12 lg:px-10"><div className="mx-auto max-w-3xl"><span className="inline-flex rounded-md bg-teal-50 px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-[.15em] text-teal-700">Integritas & Transparansi</span>{introductionTitle && <h2 className="mt-3 text-xl font-extrabold tracking-tight text-slate-900 sm:text-2xl">{introductionTitle}</h2>}{introductionBody && <div className="rich-content mx-auto mt-3 text-sm leading-relaxed text-slate-600" dangerouslySetInnerHTML={{ __html: introductionBody }}/>}</div></section>}
-
-    {isModuleEnabled('program-dan-kegiatan') && contentIsFilled(contents['program-dan-kegiatan']) && <section className="border-b border-slate-100 bg-white px-5 py-10 sm:py-12 lg:px-10"><div className="mx-auto max-w-3xl text-center"><span className="inline-flex rounded-md bg-teal-50 px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-[.15em] text-teal-700">Program Wilayah</span><h2 className="mt-3 text-xl font-extrabold tracking-tight text-slate-900 sm:text-2xl">{contents['program-dan-kegiatan'].title || 'Program dan Kegiatan'}</h2><EmptySafeText value={contents['program-dan-kegiatan'].body} className="mx-auto mt-3 text-sm leading-relaxed text-slate-600"/><Link href={`${base}/program-dan-kegiatan`} className="mt-5 inline-flex items-center gap-2 text-sm font-bold text-teal-700 hover:text-teal-900">Lihat program dan kegiatan<ArrowRight className="h-4 w-4"/></Link></div></section>}
 
     {isModuleEnabled('layanan') && services.length > 0 && <section className="px-5 py-12 sm:py-14 lg:px-10"><div className="mx-auto w-full max-w-[1440px]"><div className="mx-auto mb-8 max-w-2xl text-center"><span className="rounded-md bg-teal-50 px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-[.15em] text-teal-700">Layanan Prioritas Warga</span><h2 className="mt-3 text-xl font-extrabold sm:text-2xl">Akses Cepat Pengurusan Dokumen & Pengaduan</h2></div><div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">{services.slice(0, 6).map((service, index) => <article key={service.id} className={`flex flex-col rounded-2xl border border-slate-200 border-t-[3px] bg-white p-5 shadow-sm ${['border-t-teal-500','border-t-amber-500','border-t-blue-500'][index % 3]}`}><span className="text-[10px] font-extrabold uppercase tracking-wide text-teal-700">{service.category || 'Layanan Publik'}</span><h3 className="mt-2 font-bold">{service.name}</h3><EmptySafeText value={service.description} className="mt-2 line-clamp-3 text-xs leading-relaxed text-slate-500"/>{service.requirements && <p className="mt-2 line-clamp-2 text-[11px] text-slate-500">Persyaratan: {plainContent(service.requirements)}</p>}<Link href={`${base}/layanan`} className="mt-auto inline-flex items-center gap-1 border-t border-slate-100 pt-4 mt-4 text-[11px] font-extrabold text-teal-700">{service.application_url ? 'Mulai layanan' : 'Lihat detail layanan'}<ArrowRight className="h-3.5 w-3.5"/></Link></article>)}</div></div></section>}
 

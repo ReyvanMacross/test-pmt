@@ -52,7 +52,7 @@ export function PortalFooter({ website, profile, moduleVisibility = {} }) {
         </Link>
         <div className="flex flex-col gap-4 pl-1 sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-7 sm:gap-y-4 md:justify-end">
           <a href="tel:112" className="flex min-w-0 items-center gap-3 rounded-xl sm:rounded-none">
-            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-teal-900/70 text-xs font-black text-teal-300">112</span>
+            <span style={{ backgroundColor: 'color-mix(in srgb, var(--portal-accent) 28%, var(--portal-dark))', color: 'var(--portal-accent-on-dark)' }} className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-xs font-black">112</span>
             <span><strong className="block text-xs font-bold text-white">Bandung Siaga 112</strong><span className="mt-0.5 block text-xs text-slate-400">Call Center Bebas Pulsa (24 Jam)</span></span>
           </a>
           {moduleVisibility.kontak !== false && profile?.official_email && <a href={`mailto:${profile.official_email}`} className="flex min-w-0 items-center gap-3">
@@ -63,7 +63,7 @@ export function PortalFooter({ website, profile, moduleVisibility = {} }) {
       </div>
       <div className="flex flex-col gap-4 border-t border-white/10 pt-5 text-xs text-slate-400 sm:flex-row sm:items-center sm:justify-between sm:pt-7">
         <p className="leading-relaxed">© {new Date().getFullYear()} {website.name} — Pemerintah Kota Bandung. Hak Cipta Dilindungi Undang-Undang.</p>
-        <div className="inline-flex w-fit max-w-full items-center gap-2 rounded-lg border border-teal-700/70 bg-teal-950/50 px-3 py-2 text-xs font-bold text-teal-300">
+        <div style={{ borderColor: 'color-mix(in srgb, var(--portal-accent) 52%, transparent)', backgroundColor: 'color-mix(in srgb, var(--portal-accent) 14%, var(--portal-dark))', color: 'var(--portal-accent-on-dark)' }} className="inline-flex w-fit max-w-full items-center gap-2 rounded-lg border px-3 py-2 text-xs font-bold">
           <img src="/images/logo_diskominfo.png" alt="Logo Diskominfo" className="h-6 w-6 shrink-0 object-contain"/>
           <span>Powered by Multisite Diskominfo Kota Bandung</span>
         </div>

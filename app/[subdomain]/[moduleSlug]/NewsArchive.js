@@ -3,11 +3,14 @@
 import { useMemo, useState } from 'react'
 import Link from 'next/link'
 import { ArrowRight, CalendarDays, Search, Newspaper, MapPin, Clock3, FileText } from 'lucide-react'
+import { sanitizeRichHtml } from '@/lib/rich-text'
 
 function dateLabel(value) {
   if (!value) return 'Tanggal belum tersedia'
   return new Intl.DateTimeFormat('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }).format(new Date(value))
 }
+
+function localDateKey(date) { return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}` }
 
 function NewsCard({ item, subdomain, featured = false }) {
   const href = item.body ? `/${subdomain}/berita/${item.id}` : item.url
@@ -26,9 +29,13 @@ function NewsCard({ item, subdomain, featured = false }) {
 
 export default function NewsArchive({ portal }) {
   const { news, website, announcements, agendas, albums } = portal
+  const information = portal.moduleVisibility?.informasi === false ? null : portal.contents?.informasi
+  const informationHtml = information?.body ? sanitizeRichHtml(information.body) : ''
+  const informationFiles = [...(Array.isArray(information?.files) ? information.files : []), ...(Array.isArray(information?.images) ? information.images : [])].filter((file) => file?.url || file?.path)
   const [search, setSearch] = useState('')
   const featured = news[0]
-  const upcomingAgendas = agendas.filter((item) => new Date(item.start_date) >= new Date(new Date().toDateString())).slice(0, 3)
+  const todayKey = localDateKey(new Date())
+  const upcomingAgendas = agendas.filter((item) => String(item.end_date || item.start_date || '').slice(0, 10) >= todayKey).slice(0, 3)
   const filtered = useMemo(() => {
     const term = search.trim().toLocaleLowerCase('id')
     const remaining = featured ? news.slice(1) : news
@@ -36,6 +43,7 @@ export default function NewsArchive({ portal }) {
   }, [news, featured, search])
 
   return <div className="space-y-10">
+    {information && (information.title || informationHtml || informationFiles.length > 0) && <section aria-labelledby="public-information-heading" className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm"><div className="border-b border-slate-100 bg-slate-50 px-5 py-4 sm:px-7"><span className="text-[10px] font-bold uppercase tracking-widest text-teal-700">Informasi Publik</span><h2 id="public-information-heading" className="mt-1 text-lg font-extrabold text-slate-900">{information.title || 'Informasi untuk Masyarakat'}</h2></div>{informationHtml && <div className="rich-content px-5 py-5 text-sm leading-7 text-slate-600 sm:px-7" dangerouslySetInnerHTML={{ __html: informationHtml }}/>}{informationFiles.length > 0 && <div className="flex flex-wrap gap-2 border-t border-slate-100 px-5 py-4 sm:px-7">{informationFiles.map((file, index) => <a key={`${file.url || file.path}-${index}`} href={file.url || file.path} target="_blank" rel="noreferrer" className="inline-flex max-w-full items-center gap-2 rounded-xl border border-slate-200 px-3 py-2 text-xs font-semibold text-teal-700 hover:bg-slate-50"><FileText className="h-4 w-4 shrink-0"/><span className="truncate">{file.name || `Lihat berkas ${index + 1}`}</span></a>)}</div>}</section>}
     <section className="space-y-4"><div className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-teal-700"><Newspaper className="h-4 w-4"/>Publikasi pilihan</div>{featured ? <NewsCard item={featured} subdomain={website.subdomain} featured/> : <div className="rounded-3xl bg-gradient-to-br from-[#06141D] to-teal-900 px-6 py-14 text-center text-white"><Newspaper className="mx-auto h-10 w-10 text-teal-300"/><h2 className="mt-4 text-xl font-extrabold">Kabar dan informasi wilayah</h2><p className="mt-2 text-sm text-slate-200">Berita terbaru akan ditampilkan di halaman ini.</p></div>}</section>
     <div className="grid gap-8 lg:grid-cols-12">
       <section className="space-y-5 lg:col-span-8"><div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between"><div><span className="text-[10px] font-bold uppercase tracking-widest text-teal-700">Pembaruan wilayah</span><h2 className="mt-1 text-xl font-extrabold">Kabar Terkini Wilayah</h2></div><label className="relative block w-full sm:w-64"><Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"/><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Cari berita..." className="w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-9 pr-3 text-sm outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/15"/></label></div>{filtered.length ? <div className="grid gap-4 sm:grid-cols-2">{filtered.map((item) => <NewsCard key={item.id} item={item} subdomain={website.subdomain}/>)}</div> : <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-10 text-center text-sm text-slate-500">{search ? 'Tidak ada berita yang cocok dengan pencarian.' : 'Belum ada berita lainnya.'}</div>}</section>

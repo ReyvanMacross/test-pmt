@@ -9,7 +9,12 @@ import AgendaForm from './AgendaForm'
 import { deleteAgendaAction } from './actions'
 
 const PER_PAGE = 8
-function dateOnly(value) { return typeof value === 'string' ? value.slice(0, 10) : value ? new Date(value).toISOString().slice(0, 10) : '' }
+function dateOnly(value) {
+  if (!value) return ''
+  if (typeof value === 'string') return value.slice(0, 10)
+  const date = new Date(value)
+  return Number.isNaN(date.getTime()) ? '' : `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
+}
 function formatDate(value) {
   const date = dateOnly(value)
   return date ? new Intl.DateTimeFormat('id-ID', { day: '2-digit', month: 'long', year: 'numeric' }).format(new Date(`${date}T12:00:00`)) : '—'

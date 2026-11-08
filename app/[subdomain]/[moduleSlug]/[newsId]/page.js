@@ -11,6 +11,8 @@ function formatDate(value) {
   return value ? new Intl.DateTimeFormat('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).format(new Date(value)) : 'Tanggal belum tersedia'
 }
 
+function localDateKey(date) { return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}` }
+
 export async function generateMetadata({ params }) {
   const { subdomain, moduleSlug, newsId } = await params
   if (moduleSlug !== 'berita') return { title: 'Halaman tidak ditemukan' }
@@ -27,7 +29,8 @@ export default async function PublicNewsArticlePage({ params }) {
   const article = portal.news.find((item) => String(item.id) === String(newsId) && item.body)
   if (!article) notFound()
   const related = portal.news.filter((item) => String(item.id) !== String(article.id)).slice(0, 3)
-  const upcomingAgendas = portal.agendas.filter((item) => new Date(item.start_date) >= new Date(new Date().toDateString())).slice(0, 3)
+  const todayKey = localDateKey(new Date())
+  const upcomingAgendas = portal.agendas.filter((item) => String(item.end_date || item.start_date || '').slice(0, 10) >= todayKey).slice(0, 3)
   const paragraphs = String(article.body).split(/\r?\n\s*\r?\n/).map((part) => part.trim()).filter(Boolean)
 
   return <div className="public-portal min-h-screen bg-slate-50 text-slate-900" data-portal-template={portal.website.template_slug || 'kecamatan'}>

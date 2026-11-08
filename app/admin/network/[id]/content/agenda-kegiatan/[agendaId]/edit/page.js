@@ -23,7 +23,7 @@ export default async function EditAgendaPage({ params }) {
   const website = websiteResult.rows[0]
   if (!website) notFound()
   if (!(await canManageWebsite(session, website.id, website.user_id))) redirect('/admin/network')
-  const agendaResult = await query('SELECT id, title, description, start_date, end_date, time_range, location, organizer FROM agendas WHERE id = $1 AND website_id = $2 LIMIT 1', [agendaId, website.id])
+  const agendaResult = await query('SELECT id, title, description, start_date::text AS start_date, end_date::text AS end_date, time_range, location, organizer FROM agendas WHERE id = $1 AND website_id = $2 LIMIT 1', [agendaId, website.id])
   const agenda = agendaResult.rows[0]
   if (!agenda) notFound()
 
