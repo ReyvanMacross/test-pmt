@@ -93,6 +93,12 @@ export async function saveModuleContentAction(websiteId, moduleSlug, formData) {
     const sambutanQuote = moduleSlug === 'profil-pimpinan'
       ? String(formData.get('sambutan_quote') || '').trim().slice(0, 5000)
       : null
+    const judulSambutan = moduleSlug === 'profil-pimpinan'
+      ? String(formData.get('judul_sambutan') || '').trim()
+      : null
+    if (moduleSlug === 'profil-pimpinan' && judulSambutan.length > 255) {
+      return { error: 'Judul sambutan maksimal 255 karakter.' }
+    }
     const externalPortalUrl = moduleSlug === 'ppid-utama'
       ? String(formData.get('external_url') || '').trim()
       : null
@@ -135,6 +141,7 @@ export async function saveModuleContentAction(websiteId, moduleSlug, formData) {
     if (moduleSlug === 'profil-pimpinan') {
       metadata.pangkat_golongan = pangkatGolongan || null
       metadata.sambutan_quote = sambutanQuote || null
+      metadata.judul_sambutan = judulSambutan || null
     }
     if (moduleSlug === 'ppid-utama') metadata.external_url = externalPortalUrl || null
     if (moduleSlug === 'struktur-organisasi') {

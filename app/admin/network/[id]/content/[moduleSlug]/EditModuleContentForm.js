@@ -15,9 +15,25 @@ function formatBytes(bytes, decimals = 1) {
   return `${parseFloat((bytes / Math.pow(k, i)).toFixed(dm))} ${sizes[i]}`
 }
 
+function htmlToPlainText(value = '') {
+  return String(value)
+    .replace(/<\s*br\s*\/?>/gi, '\n')
+    .replace(/<\/(?:p|div|li|h[1-6])\s*>/gi, '\n')
+    .replace(/<[^>]*>/g, '')
+    .replace(/&nbsp;/gi, ' ')
+    .replace(/&amp;/gi, '&')
+    .replace(/&lt;/gi, '<')
+    .replace(/&gt;/gi, '>')
+    .replace(/&quot;/gi, '"')
+    .replace(/&#39;/gi, "'")
+    .replace(/\n{3,}/g, '\n\n')
+    .trim()
+}
+
 export default function EditModuleContentForm({ website, moduleMeta, initialContent = {} }) {
   const router = useRouter()
   const editorRef = useRef(null)
+  const quoteEditorRef = useRef(null)
   const fileInputRef = useRef(null)
 
   // Tentukan konfigurasi label dan panduan modul
@@ -127,16 +143,20 @@ export default function EditModuleContentForm({ website, moduleMeta, initialCont
 
   // Initial values
   const initialTitle = initialContent.title || moduleConfig.defaultTitle || ''
-  const initialBody = initialContent.body || ''
+  const initialBody = moduleMeta.slug === 'profil-pimpinan'
+    ? htmlToPlainText(initialContent.body || '')
+    : initialContent.body || ''
+  const initialLeadershipQuote = initialContent.metadata?.sambutan_quote || ''
   const existingAttachment =
     (Array.isArray(initialContent.images) && initialContent.images[0]) ||
     (Array.isArray(initialContent.files) && initialContent.files[0]) ||
     null
 
   const [title, setTitle] = useState(initialTitle)
+  const [leadershipHeadline, setLeadershipHeadline] = useState(initialContent.metadata?.judul_sambutan || '')
   const [externalPortalUrl, setExternalPortalUrl] = useState(initialContent.metadata?.external_url || '')
   const [pangkatGolongan, setPangkatGolongan] = useState(initialContent.metadata?.pangkat_golongan || '')
-  const [leadershipQuote, setLeadershipQuote] = useState(initialContent.metadata?.sambutan_quote || '')
+  const [leadershipQuote, setLeadershipQuote] = useState(initialLeadershipQuote)
   const [organizationMode, setOrganizationMode] = useState(initialContent.metadata?.organization_mode === 'builder' ? 'builder' : 'image')
   const [organizationRows, setOrganizationRows] = useState(() => Array.isArray(initialContent.metadata?.organization_chart) ? initialContent.metadata.organization_chart : [])
   const [bodyHtml, setBodyHtml] = useState(initialBody)
@@ -153,6 +173,12 @@ export default function EditModuleContentForm({ website, moduleMeta, initialCont
       editorRef.current.innerHTML = initialBody
     }
   }, [initialBody])
+
+  useEffect(() => {
+    if (quoteEditorRef.current && initialLeadershipQuote) {
+      quoteEditorRef.current.innerHTML = initialLeadershipQuote
+    }
+  }, [initialLeadershipQuote])
 
   function showToast(type, message) {
     setToast({ type, message })
@@ -178,6 +204,17 @@ export default function EditModuleContentForm({ website, moduleMeta, initialCont
     if (editorRef.current) {
       setBodyHtml(editorRef.current.innerHTML)
     }
+  }
+
+  function handleQuoteInput() {
+    if (quoteEditorRef.current) setLeadershipQuote(quoteEditorRef.current.innerHTML)
+  }
+
+  function formatQuote(cmd) {
+    if (!quoteEditorRef.current) return
+    quoteEditorRef.current.focus()
+    document.execCommand(cmd, false)
+    setLeadershipQuote(quoteEditorRef.current.innerHTML)
   }
 
   function handleFileSelected(file) {
@@ -239,9 +276,11 @@ export default function EditModuleContentForm({ website, moduleMeta, initialCont
 
   function handleReset() {
     setTitle(initialTitle)
+    setLeadershipHeadline(initialContent.metadata?.judul_sambutan || '')
     setExternalPortalUrl(initialContent.metadata?.external_url || '')
     setPangkatGolongan(initialContent.metadata?.pangkat_golongan || '')
     setLeadershipQuote(initialContent.metadata?.sambutan_quote || '')
+    if (quoteEditorRef.current) quoteEditorRef.current.innerHTML = initialContent.metadata?.sambutan_quote || ''
     setOrganizationMode(initialContent.metadata?.organization_mode === 'builder' ? 'builder' : 'image')
     setOrganizationRows(Array.isArray(initialContent.metadata?.organization_chart) ? initialContent.metadata.organization_chart : [])
     setBodyHtml(initialBody)
@@ -266,7 +305,10 @@ export default function EditModuleContentForm({ website, moduleMeta, initialCont
       fd.set('title', title)
       if (moduleMeta.slug === 'ppid-utama') fd.set('external_url', externalPortalUrl)
       if (moduleMeta.slug === 'profil-pimpinan') fd.set('pangkat_golongan', pangkatGolongan)
-      if (moduleMeta.slug === 'profil-pimpinan') fd.set('sambutan_quote', leadershipQuote)
+      if (moduleMeta.slug === 'profil-pimpinan') {
+        fd.set('judul_sambutan', leadershipHeadline)
+        fd.set('sambutan_quote', quoteEditorRef.current ? quoteEditorRef.current.innerHTML : leadershipQuote)
+      }
       if (moduleMeta.slug === 'struktur-organisasi') {
         const rows = organizationRows.map((row) => ({
           jabatan: String(row.jabatan || '').trim(),
@@ -281,7 +323,9 @@ export default function EditModuleContentForm({ website, moduleMeta, initialCont
         fd.set('organization_mode', organizationMode)
         fd.set('organization_chart', JSON.stringify(rows))
       }
-      const currentHtml = editorRef.current ? editorRef.current.innerHTML : bodyHtml
+      const currentHtml = moduleMeta.slug === 'profil-pimpinan'
+        ? bodyHtml
+        : editorRef.current ? editorRef.current.innerHTML : bodyHtml
       fd.set('body', currentHtml)
 
       if (selectedFile) {
@@ -416,13 +460,13 @@ export default function EditModuleContentForm({ website, moduleMeta, initialCont
           <div className={moduleMeta.slug === 'profil-pimpinan' ? 'grid grid-cols-1 gap-4 md:grid-cols-2' : ''}>
             <div>
               <label className="text-sm font-semibold text-slate-700 block mb-2" htmlFor="judul_konten">
-                {moduleMeta.slug === 'profil-pimpinan' ? 'Judul Konten / Nama Pimpinan' : 'Judul Konten'}
+                {moduleMeta.slug === 'profil-pimpinan' ? 'Nama & Gelar Pimpinan' : 'Judul Konten'}
               </label>
               <input
                 className="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-blue-600 bg-white placeholder:text-slate-400 transition shadow-xs"
                 id="judul_konten"
                 name="judul_konten"
-                placeholder={moduleMeta.slug === 'profil-pimpinan' ? 'Masukkan nama dan gelar pimpinan...' : 'Masukkan judul konten...'}
+                placeholder={moduleMeta.slug === 'profil-pimpinan' ? 'Contoh: Drs. H. Hendra Arifin, M.Si' : 'Masukkan judul konten...'}
                 type="text"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
@@ -559,17 +603,33 @@ export default function EditModuleContentForm({ website, moduleMeta, initialCont
           </div>}
 
           {moduleMeta.slug === 'profil-pimpinan' && <div className="space-y-2">
-            <label className="block text-sm font-semibold text-slate-700" htmlFor="leadershipQuote">Kutipan Sambutan Pimpinan</label>
-            <textarea id="leadershipQuote" value={leadershipQuote} onChange={(event) => setLeadershipQuote(event.target.value)} maxLength={5000} rows={4} placeholder="Tuliskan kutipan utama sambutan pimpinan..." className="w-full resize-y rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm leading-6 text-slate-800 outline-none focus:ring-2 focus:ring-blue-600"/>
-            <p className="text-xs text-slate-500">Kutipan ini ditampilkan terpisah di atas deskripsi sambutan.</p>
+            <label className="block text-sm font-semibold text-slate-700" htmlFor="judul_sambutan">Judul Utama Sambutan Pimpinan</label>
+            <input id="judul_sambutan" type="text" maxLength={255} value={leadershipHeadline} onChange={(event) => setLeadershipHeadline(event.target.value)} placeholder="Contoh: Melayani Sepenuh Hati untuk Bojongloa Kidul yang Maju" className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-800 outline-none placeholder:text-slate-400 focus:ring-2 focus:ring-blue-600"/>
+          </div>}
+
+          {moduleMeta.slug === 'profil-pimpinan' && <div className="space-y-2">
+            <label className="block text-sm font-semibold text-slate-700" htmlFor="leadershipQuote">Kutipan / Komitmen Pimpinan (Kotak Highlight)</label>
+            <div className="overflow-hidden rounded-xl border border-slate-200 bg-white focus-within:ring-2 focus-within:ring-blue-600">
+              <div className="flex items-center gap-1 border-b border-slate-200 bg-slate-50 px-3 py-2">
+                <button type="button" onMouseDown={(event) => event.preventDefault()} onClick={() => formatQuote('italic')} title="Italic" className="rounded-lg px-2 py-1 text-sm font-semibold italic text-slate-600 hover:bg-slate-200">I</button>
+                <button type="button" onMouseDown={(event) => event.preventDefault()} onClick={() => formatQuote('bold')} title="Bold" className="rounded-lg px-2 py-1 text-sm font-bold text-slate-600 hover:bg-slate-200">B</button>
+                <button type="button" onMouseDown={(event) => event.preventDefault()} onClick={() => formatQuote('underline')} title="Underline" className="rounded-lg px-2 py-1 text-sm text-slate-600 underline hover:bg-slate-200">U</button>
+                <span className="mx-1 h-4 w-px bg-slate-300" />
+                <button type="button" onMouseDown={(event) => event.preventDefault()} onClick={() => formatQuote('removeFormat')} title="Hapus format" className="rounded-lg px-2 py-1 text-sm text-slate-600 hover:bg-slate-200">Tx</button>
+              </div>
+              <div ref={quoteEditorRef} id="leadershipQuote" contentEditable suppressContentEditableWarning dir="ltr" onInput={handleQuoteInput} className="min-h-28 p-4 text-sm italic leading-6 text-slate-800 outline-none" data-placeholder="Tuliskan kutipan atau komitmen pimpinan..." />
+              <style dangerouslySetInnerHTML={{ __html: '#leadershipQuote:empty:before{content:attr(data-placeholder);color:#94a3b8;font-style:italic;pointer-events:none}' }}/>
+            </div>
+            <p className="text-xs text-slate-500">Teks ini akan ditampilkan dalam kotak sorot pada halaman website.</p>
           </div>}
 
           {/* 3. Isi Konten dengan Toolbar */}
           <div className="space-y-2">
             <label className="text-sm font-semibold text-slate-700 block" htmlFor="editorArea">
-              {moduleMeta.slug === 'profil-pimpinan' ? 'Deskripsi Sambutan Pimpinan' : 'Isi Konten'}
+              {moduleMeta.slug === 'profil-pimpinan' ? 'Deskripsi / Teks Sambutan Tambahan' : 'Isi Konten'}
             </label>
-            <div className="border border-slate-200 rounded-xl overflow-hidden bg-white shadow-xs focus-within:ring-2 focus-within:ring-blue-600">
+            {moduleMeta.slug === 'profil-pimpinan' && <textarea id="editorArea" dir="ltr" rows={5} value={bodyHtml} onChange={(event) => setBodyHtml(event.target.value)} placeholder="Ketikkan teks deskripsi atau narasi singkat sambutan di sini..." className="w-full resize-y rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm leading-6 text-slate-800 outline-none placeholder:text-slate-400 focus:ring-2 focus:ring-blue-600"/>}
+            {moduleMeta.slug !== 'profil-pimpinan' && <div className="border border-slate-200 rounded-xl overflow-hidden bg-white shadow-xs focus-within:ring-2 focus-within:ring-blue-600">
               {/* Rich Editor Toolbar */}
               <div className="flex items-center flex-wrap gap-1 px-3 py-2 bg-slate-50 border-b border-slate-200">
                 {/* Bold */}
@@ -687,7 +747,7 @@ export default function EditModuleContentForm({ website, moduleMeta, initialCont
                   `,
                 }}
               />
-            </div>
+            </div>}
           </div>
 
           {/* 4. Action Buttons */}

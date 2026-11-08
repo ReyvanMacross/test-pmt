@@ -431,7 +431,7 @@ export default function EditProfileForm({ website, initialProfile = {}, initialK
         {/* ── SECTION 3: Batas Wilayah & Peta Lokasi ───────────────────────── */}
         <section className="space-y-4 pt-2">
           <div className="border-b border-slate-100 pb-3">
-            <h2 className="text-base font-semibold text-slate-900">{website.template_slug === 'dinas' ? 'Peta Lokasi Instansi' : 'Batas Wilayah &amp; Peta Lokasi'}</h2>
+            <h2 className="text-base font-semibold text-slate-900">{website.template_slug === 'dinas' ? 'Peta Lokasi Instansi' : 'Batas Wilayah & Peta Lokasi'}</h2>
             <p className="text-xs text-slate-500 mt-0.5">
               {website.template_slug === 'dinas' ? 'Sematan peta lokasi kantor instansi' : 'Batas geografis wilayah dan sematan peta interaktif'}
             </p>
