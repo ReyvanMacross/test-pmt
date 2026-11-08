@@ -10,10 +10,15 @@ const production = process.env.NODE_ENV === 'production'
 const configuredSsl = process.env.DB_SSL?.toLowerCase()
 const useSsl = configuredSsl === 'true' || (configuredSsl !== 'false' && production)
 const sslCaFile = process.env.DB_SSL_CA_FILE?.trim()
+const sslCa = process.env.DB_SSL_CA?.replace(/\\n/g, '\n').trim()
 const ssl = useSsl
   ? {
       rejectUnauthorized: true,
-      ...(sslCaFile ? { ca: readFileSync(resolve(process.cwd(), sslCaFile), 'utf8') } : {}),
+      ...(sslCa
+        ? { ca: sslCa }
+        : sslCaFile
+          ? { ca: readFileSync(resolve(process.cwd(), sslCaFile), 'utf8') }
+          : {}),
     }
   : false
 
